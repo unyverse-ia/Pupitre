@@ -1,0 +1,14 @@
+Tu es le graphiste de Pupitre, un organiseur de bureau pour Windows 11 (des cadres regroupent les fichiers du bureau, plus un panneau de taches et un panneau de notes). L'utilisateur a vu tes propositions icon-a.png et icon-b.png : il aime beaucoup les couleurs (degrade indigo vers violet, bleu electrique) mais les trouve trop poussees : trop de 3D, de reflets, de verre et de volume. Il veut quelque chose de plus simple et professionnel.
+
+Mission : genere avec ton outil image_gen DEUX nouvelles propositions d'icone d'application en DESIGN PLAT (flat design), dans l'esprit des icones systeme sobres de macOS et des applications pro modernes :
+- forme squircle (coins arrondis continus, rayon d'environ 22 pour cent de la largeur) remplissant presque toute l'image ;
+- fond : le meme degrade riche indigo vers violet que dans icon-a.png / icon-b.png, lineaire et doux, SANS lumiere ponctuelle, SANS relief sur les bords, SANS reflet ;
+- un glyphe central en aplat blanc pur (eventuellement une seconde teinte blanche a 70 pour cent d'opacite pour un element secondaire), formes geometriques simples, traits epais, coins arrondis, parfaitement lisible a 16 et 32 px ;
+- AUCUN effet 3D, aucune perspective, aucune ombre portee, aucun degrade sur le glyphe, aucun contour fin, aucun texte, aucun effet verre.
+
+Variante C (assets-codex/icon-c.png) : silhouette tres simplifiee d'un pupitre (un plateau horizontal sur un pied) avec deux cartes arrondies posees dessus, le tout en aplats blancs.
+Variante D (assets-codex/icon-d.png) : trois rectangles arrondis blancs disposes en grille (deux en haut, un plus large en bas, ou l'inverse), comme des cadres sur un bureau, l'un portant une coche blanche decoupee en negatif (couleur du fond).
+
+Contraintes techniques : PNG 1024 x 1024, transparence totale en dehors du squircle (pas de fond carre, pas de halo), pas de texte. Ne modifie aucun autre fichier du projet, ne touche pas a icon.png, icon-a.png ni icon-b.png.
+
+Verification finale en PowerShell (System.Drawing) : dimensions 1024 x 1024 pour chaque fichier, alpha egal a 0 au pixel (2,2) et au pixel (1021,1021), pixel central opaque. Termine par une description de deux lignes par variante.

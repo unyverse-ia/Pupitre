@@ -1,0 +1,8 @@
+Tu es le graphiste de Pupitre (organiseur de bureau Windows, WPF, interface sombre et moderne). Mission : produire les 13 vignettes des modèles de cartes mentales décrites dans assets-codex/BRIEF-VIGNETTES.md (lis ce fichier en entier avant de commencer et respecte-le à la lettre : noms de fichiers, palette, structures, aucun texte).
+
+Méthode attendue :
+1. Génère chaque vignette avec ta compétence ImageGen (image_gen), en format paysage, style plat, propre, net, à la manière des miniatures de modèles de XMind : blocs arrondis unis, lignes fines à bouts ronds, fond uni clair (sauf brainstorm : fond sombre). Aucun texte, aucun chiffre, aucun logo, aucune ombre lourde, aucun dégradé.
+2. Redimensionne et recadre chaque image à exactement 476 × 236 px, PNG RGB opaque, avec un script Node ou PowerShell placé dans assets-codex/tools/ (pas de dépendance à installer si possible ; sinon utilise System.Drawing en PowerShell).
+3. Enregistre les 13 fichiers dans assets-codex/templates/ avec les noms exacts du brief, vérifie les dimensions de chacun, puis écris assets-codex/templates/LIVRAISON.md (liste, outil, remarques, ce qui s'écarte éventuellement du brief).
+
+Contraintes : ne modifie aucun autre fichier du projet (ni src/, ni dist/, ni README.md). Si une génération échoue, réessaie une fois puis passe à la suivante et note-le dans LIVRAISON.md. Travaille sans poser de question.

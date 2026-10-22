@@ -1,0 +1,11 @@
+Tu es le graphiste de Pupitre (organiseur de bureau Windows : cadres de fichiers, taches, notes). Tu as livre assets-codex/icon-c.png en design plat ; il manque la seconde variante demandee.
+
+Mission : genere avec ton outil image_gen UNE icone d'application en DESIGN PLAT, assets-codex/icon-d.png :
+- squircle (coins arrondis continus, rayon d'environ 22 pour cent de la largeur) remplissant presque toute l'image ;
+- fond : degrade lineaire doux indigo vers violet avec une pointe de bleu electrique, SANS lumiere ponctuelle, SANS relief, SANS reflet ;
+- glyphe : trois rectangles arrondis en aplat blanc pur disposes en grille (deux petits en haut cote a cote, un large en bas), comme des cadres poses sur un bureau ; le rectangle du bas porte une coche decoupee en negatif (couleur du fond). Traits epais, formes simples, lisibles a 16 px ;
+- AUCUN effet 3D, aucune perspective, aucune ombre portee, aucun degrade sur le glyphe, aucun contour, aucun texte, aucun effet verre.
+
+Contraintes : PNG exactement 1024 x 1024 (redimensionne si l'outil produit une autre taille), transparence totale hors du squircle. Ne modifie aucun autre fichier, ne touche pas aux autres icon-*.png.
+
+Verification finale en PowerShell (System.Drawing) : dimensions, alpha 0 aux pixels (2,2) et (1021,1021), pixel central opaque. Termine par une description en deux lignes.

@@ -1,0 +1,9 @@
+# Sorties de compilation et fichiers temporaires
+dist/Pupitre.exe
+tools/MakeIcon.exe
+tools/dev/*.txt
+assets-codex/codex-log-*.txt
+*.corrompu-*
+*.tmp
+tools/dev/real/
+assets-codex/codex-log*.txt

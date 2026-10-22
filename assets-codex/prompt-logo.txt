@@ -1,0 +1,8 @@
+Tu es le graphiste de Pupitre (organiseur de bureau Windows). Mission : produire le nouveau logo de l'application en quatre déclinaisons de couleur, dans le style des icônes des applications Adobe Creative Cloud, selon assets-codex/BRIEF-LOGO.md (lis ce fichier en entier et respecte-le à la lettre : carré arrondi plat, monogramme « Pu » géométrique gras, fond sombre, lettres claires de la même teinte, rien d'autre).
+
+Méthode attendue :
+1. Génère chaque déclinaison avec ta compétence ImageGen (image_gen), format carré, rendu plat et net, sans ombre ni dégradé ni reflet ni texture, aucun autre élément que le carré et les deux lettres « Pu ».
+2. Normalise chaque image à exactement 1024 × 1024 px en PNG 32 bits : applique un masque de carré arrondi (rayon 190 px) avec un script PowerShell (System.Drawing) ou Node placé dans assets-codex/tools/, de sorte que l'extérieur du carré soit alpha 0 et l'intérieur alpha 255. Vérifie les pixels (2,2) alpha 0 et (512,512) alpha 255.
+3. Enregistre logo-a.png, logo-b.png, logo-c.png, logo-d.png dans assets-codex/logo/, puis écris assets-codex/logo/LIVRAISON.md (fichiers, outil, vérifications, écarts éventuels).
+
+Contraintes : ne modifie aucun autre fichier du projet (ni src/, ni dist/, ni assets/, ni README.md). Si une génération échoue, réessaie une fois puis passe à la suivante et note-le. Travaille sans poser de question.
