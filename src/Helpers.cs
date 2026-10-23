@@ -97,14 +97,46 @@ namespace Pupitre
     }
 
     /// <summary>Lancement avec Windows (HKCU\...\Run), écrit uniquement sur demande de l'utilisateur.</summary>
+    /// <summary>Lancement à l'ouverture de session : clé Run du profil, plus l'état « Applications de démarrage » du Gestionnaire
+    /// des tâches (clé StartupApproved), qui peut désactiver l'entrée sans la retirer.</summary>
     internal static class Startup
     {
         const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
-        public static bool IsEnabled()
+        const string ApprovedKey = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
+
+        public static bool IsEnabled() { return Target() != null; }
+
+        /// <summary>Chemin inscrit dans la clé Run, sans guillemets (null si absent).</summary>
+        public static string Target()
         {
-            try { using (var k = Registry.CurrentUser.OpenSubKey(RunKey)) return k != null && k.GetValue(App.Name) != null; }
-            catch { return false; }
+            try
+            {
+                using (var k = Registry.CurrentUser.OpenSubKey(RunKey))
+                {
+                    var v = k == null ? null : k.GetValue(App.Name) as string;
+                    return string.IsNullOrEmpty(v) ? null : v.Trim().Trim('"');
+                }
+            }
+            catch { return null; }
         }
+
+        /// <summary>Faux si l'entrée a été désactivée dans « Applications de démarrage » (premier octet 3).</summary>
+        public static bool IsApproved()
+        {
+            try
+            {
+                using (var k = Registry.CurrentUser.OpenSubKey(ApprovedKey))
+                {
+                    var v = k == null ? null : k.GetValue(App.Name) as byte[];
+                    return v == null || v.Length == 0 || v[0] != 0x03;
+                }
+            }
+            catch { return true; }
+        }
+
+        static bool PointsHere(string target) { return target != null && string.Equals(App.Norm(target), App.Norm(App.ExePath), StringComparison.OrdinalIgnoreCase); }
+
+        /// <summary>Inscrit (et réactive) ou retire l'entrée.</summary>
         public static void Set(bool enabled)
         {
             try
@@ -115,8 +147,33 @@ namespace Pupitre
                     if (enabled) k.SetValue(App.Name, "\"" + App.ExePath + "\"");
                     else if (k.GetValue(App.Name) != null) k.DeleteValue(App.Name, false);
                 }
+                if (enabled)
+                {
+                    using (var a = Registry.CurrentUser.CreateSubKey(ApprovedKey))
+                        if (a != null) a.SetValue(App.Name, new byte[] { 0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, RegistryValueKind.Binary);
+                }
             }
             catch (Exception ex) { Log.Error(ex, "démarrage"); }
+        }
+
+        /// <summary>Au lancement : l'entrée existante suit l'exécutable s'il a été déplacé (sans toucher à l'état d'activation).</summary>
+        public static void RefreshPath()
+        {
+            var t = Target();
+            if (t == null || PointsHere(t)) return;
+            try { using (var k = Registry.CurrentUser.CreateSubKey(RunKey)) if (k != null) k.SetValue(App.Name, "\"" + App.ExePath + "\""); }
+            catch (Exception ex) { Log.Error(ex, "démarrage"); }
+        }
+
+        /// <summary>État lisible, affiché dans les paramètres.</summary>
+        public static string Describe()
+        {
+            var t = Target();
+            if (t == null) return "Démarrage avec Windows : inactif.";
+            if (!IsApproved()) return "Démarrage avec Windows : inscrit, mais désactivé dans « Applications de démarrage » du Gestionnaire des tâches. Enregistrer avec l'option cochée le réactive.";
+            if (!File.Exists(t)) return "Démarrage avec Windows : inscrit vers un fichier introuvable (" + t + "). Enregistrer avec l'option cochée corrige le chemin.";
+            if (!PointsHere(t)) return "Démarrage avec Windows : inscrit vers un autre exécutable (" + t + "). Enregistrer avec l'option cochée pointe sur celui-ci.";
+            return "Démarrage avec Windows : actif (" + t + ").";
         }
     }
 

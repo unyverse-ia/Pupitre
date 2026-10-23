@@ -120,7 +120,7 @@ namespace Pupitre
             if (L.MindPanel == null) L.MindPanel = new PanelInfo { Color = 5 };
             var store = Json.Load<TaskStore>(TasksPath);
             S.StartWithWindows = Startup.IsEnabled();
-            if (S.StartWithWindows) Startup.Set(true);   // le chemin enregistré suit l'exécutable s'il a été déplacé
+            Startup.RefreshPath();                       // l'entrée suit l'exécutable s'il a été déplacé
             Tasks = new TasksVm(this, store);
             Tasks.CountsChanged += OnCounts;
             layoutDeb = new Debouncer(600, delegate { UpdateAutoProfile(); Json.Save(LayoutPath, L); });
@@ -654,7 +654,7 @@ namespace Pupitre
         public bool ApplySettings()
         {
             bool ok = RegisterHotkeys();
-            if (Startup.IsEnabled() != S.StartWithWindows) Startup.Set(S.StartWithWindows);
+            if (S.StartWithWindows) Startup.Set(true); else if (Startup.IsEnabled()) Startup.Set(false);   // Set(true) réactive aussi l'entrée
             if (S.HideDesktopIcons) { DesktopIcons.SetHidden(true); weHidIcons = true; }
             else if (weHidIcons) { DesktopIcons.SetHidden(false); weHidIcons = false; }
             foreach (var w in DesktopWindows) { w.ApplyAppearance(); w.ApplyLock(); }

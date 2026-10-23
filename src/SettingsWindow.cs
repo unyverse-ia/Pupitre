@@ -16,7 +16,7 @@ namespace Pupitre
         CheckBox cbStart, cbSnap, cbHide, cbExt, cbAuto, cbRemind, cbTasks, cbNotes, cbMind, cbLock, cbDock;
         RadioButton[] iconSize = new RadioButton[3];
         StackPanel cadreList, windowList, profileList;
-        TextBlock status;
+        TextBlock status, startupNote;
 
         public SettingsWindow(Controller ctl) : base(null, "Paramètres", 540)
         {
@@ -36,6 +36,7 @@ namespace Pupitre
             cbDock = Opt(g1, "Fusionner un cadre déposé contre un autre", !d.NoAutoDock);
             Panel.Children.Add(g1);
             Note("« Masquer les icônes du bureau » : le cadre « Bureau » les affiche à la place ; elles reviennent quand " + App.Name + " est fermé.");
+            startupNote = Note(Startup.Describe());
             var row2 = new DockPanel { Margin = new Thickness(0, 8, 0, 0) };
             row2.Children.Add(Lbl("Taille des icônes par défaut"));
             var wp2 = new WrapPanel();
@@ -223,6 +224,7 @@ namespace Pupitre
             s.NoAutoDock = cbDock.IsChecked != true;
             for (int i = 0; i < iconSize.Length; i++) if (iconSize[i].IsChecked == true) s.IconSize = i;
             if (!c.ApplySettings()) c.Toast("Un raccourci clavier est indisponible (déjà utilisé par une autre application) ; les autres réglages sont enregistrés.");
+            startupNote.Text = Startup.Describe();
             return true;
         }
 

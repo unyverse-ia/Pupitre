@@ -205,11 +205,19 @@ cadre « Bureau » à la place.
 
 ## Démarrage avec Windows et Smart App Control
 
-« Lancer avec Windows » inscrit Pupitre dans la clé `Run` de votre profil. Sur un PC où **Smart App Control** est
-actif, un exécutable non signé peut être bloqué sans message à l'ouverture de session (le journal
-*Microsoft-Windows-CodeIntegrity/Operational* enregistre alors un événement 3077). Si Pupitre n'apparaît pas au
-démarrage, ouvrez-le à la main (`Pupitre.exe` à la racine du dossier) ; si Windows le refuse, recompilez (`build.cmd`) ou signez-le
-(voir plus haut). Signer l'exécutable est la seule solution durable sur ces postes.
+« Lancer avec Windows » inscrit Pupitre dans la clé `Run` de votre profil. Les paramètres affichent, sous l'option,
+l'état réel de cette entrée (active, désactivée, chemin périmé). Si Pupitre n'apparaît pas à l'ouverture de session :
+
+1. Paramètres → lisez la ligne « Démarrage avec Windows : … ». Si elle signale une désactivation ou un chemin périmé,
+   cochez l'option et cliquez sur Enregistrer : l'entrée est réécrite et réactivée.
+2. Gestionnaire des tâches → **Applications de démarrage** : Pupitre doit être « Activé » (Windows peut l'avoir
+   désactivé ; Pupitre le réactive à l'enregistrement des paramètres).
+3. Dossier déplacé ou renommé après l'activation : lancez Pupitre une fois à la main, il corrige le chemin lui-même.
+4. PC d'entreprise : une stratégie peut interdire les programmes au démarrage ou les exécutables non signés, et
+   **Smart App Control** peut bloquer un exécutable non signé sans message (journal
+   *Microsoft-Windows-CodeIntegrity/Operational*, événement 3077). Solutions : signer l'exécutable (voir plus haut)
+   ou demander à l'informatique ; à défaut, un raccourci vers `Pupitre.exe` dans le dossier Démarrage
+   (`Win+R`, `shell:startup`) est parfois accepté là où la clé Run ne l'est pas.
 
 ## Limites connues
 
