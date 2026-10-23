@@ -134,6 +134,9 @@ namespace Pupitre
             saveDeb = new Debouncer(500, delegate { if (shownOnce && !SuppressSave && !IsFullScreen) SaveRect(); });   // plein écran : géométrie provisoire, jamais mémorisée
             LocationChanged += delegate { if (shownOnce && !SuppressSave) saveDeb.Trigger(); };
             SizeChanged += delegate { UpdateTitleLayout(); if (shownOnce && !SuppressSave) saveDeb.Trigger(); };
+            // cadres fusionnés : la colonne suit chaque déplacement, redimensionnement ou repli de l'un de ses membres
+            LocationChanged += delegate { if (shownOnce) c.OnGeometry(this); };
+            SizeChanged += delegate { if (shownOnce) c.OnGeometry(this); };
             Closed += delegate { if (!IntentionalClose) c.OnWindowLost(this); };
         }
 
@@ -156,6 +159,8 @@ namespace Pupitre
         }
 
         protected virtual bool CanRename { get { return true; } }
+        /// <summary>Faux pour un cadre collé sous un autre : son bord haut appartient au cadre du dessus.</summary>
+        protected virtual bool AllowTopResize { get { return true; } }
         protected virtual string SettingsTooltip { get { return "Paramètres du cadre (couleur, opacité, verrou…)"; } }
         /// <summary>Verrou propre à ce panneau (réglé dans ses paramètres) ; le verrou général des paramètres s'y ajoute.</summary>
         protected virtual bool OwnLocked { get { return false; } }
@@ -317,6 +322,35 @@ namespace Pupitre
             return (src != null && src.CompositionTarget != null) ? src.CompositionTarget.TransformToDevice.M11 : 1.0;
         }
 
+        // ---- cadres fusionnés : coins et placement par la colonne --------------------------------------------------
+        bool grpTop = true, grpBottom = true;
+
+        /// <summary>Coins arrondis selon la place dans une colonne de cadres fusionnés : seuls les coins extérieurs restent ronds.</summary>
+        public void SetGroupCorners(bool top, bool bottom)
+        {
+            if (grpTop == top && grpBottom == bottom) return;
+            grpTop = top; grpBottom = bottom;
+            ApplyCorners();
+        }
+
+        void ApplyCorners()
+        {
+            double t = grpTop ? 12 : 0, b = grpBottom ? 12 : 0;
+            Root.CornerRadius = new CornerRadius(t, t, b, b);
+            double tt = grpTop ? 11 : 0, tb = rolled && grpBottom ? 11 : 0;
+            TitleBar.CornerRadius = new CornerRadius(tt, tt, tb, tb);
+        }
+
+        /// <summary>Placement décidé par la colonne (fusion) : position et largeur imposées, hauteur conservée, coins adaptés.</summary>
+        public void PlaceInGroup(double x, double y, double w, bool top, bool bottom)
+        {
+            SuppressSave = true;
+            Left = x; Top = y; Width = w;
+            SuppressSave = false;
+            SetGroupCorners(top, bottom);
+            saveDeb.Trigger();
+        }
+
         /// <summary>Enregistre tout de suite une position ou une taille en attente (sortie de l'application).</summary>
         public void FlushRect() { if (IsFullScreen) return; saveDeb.Flush(); }
 
@@ -395,7 +429,7 @@ namespace Pupitre
             Native.POINT cur; Native.GetCursorPos(out cur);
             int dx = cur.X - resizeStart.X, dy = cur.Y - resizeStart.Y;
             var r = resizeRect;
-            bool left = (resizeEdge & 1) != 0, right = (resizeEdge & 2) != 0, top = (resizeEdge & 4) != 0, bottom = (resizeEdge & 8) != 0;
+            bool left = (resizeEdge & 1) != 0, right = (resizeEdge & 2) != 0, top = (resizeEdge & 4) != 0 && AllowTopResize, bottom = (resizeEdge & 8) != 0;
             double scale = DpiScale();
             int th = c.S.Snap ? (int)Math.Round(9 * scale) : 0;
             List<int> xs, ys; Targets(out xs, out ys);
@@ -491,14 +525,14 @@ namespace Pupitre
                 restoreH = Height;
                 MinHeight = BarH;
                 Body.Visibility = Visibility.Collapsed;
-                TitleBar.CornerRadius = new CornerRadius(11);
+                ApplyCorners();
                 ApplyLock();
                 AnimateHeight(BarH, animate, delegate { SuppressSave = false; saveDeb.Trigger(); });
             }
             else
             {
                 double target = Math.Max(restoreH, BarH + 56);
-                TitleBar.CornerRadius = new CornerRadius(11, 11, 0, 0);
+                ApplyCorners();
                 AnimateHeight(target, animate, delegate
                 {
                     MinHeight = BarH + 56;

@@ -639,6 +639,21 @@ namespace Pupitre
         }
 
         protected override void OnOpenSettings() { c.EditCadre(this); }
+        protected override bool AllowTopResize { get { return !Fusion.IsBelow(c, this); } }
+
+        /// <summary>Menu du titre : fusion avec la colonne d'un autre cadre (ou cadre indépendant).</summary>
+        protected override void BuildMenu(ContextMenu menu)
+        {
+            var fusion = new MenuItem { Header = "Fusionner avec un cadre", Icon = Theme.Icon("IcoGridLayout", 14) };
+            bool below = Fusion.IsBelow(c, this);
+            fusion.Items.Add(Check("Aucune fusion (cadre indépendant)", !below, delegate { Fusion.Attach(c, this, null); }));
+            foreach (var t0 in Fusion.Targets(c, this))
+            {
+                var t = t0;
+                fusion.Items.Add(Check("Sous « " + t.Info.Name + " »", below && Fusion.Top(c, this) == t, delegate { Fusion.Attach(c, this, t); }));
+            }
+            menu.Items.Add(fusion);
+        }
         protected override bool OwnLocked { get { return Info.Locked; } }
         protected override void OnRenamed(string name) { Info.Name = name; SetTitle(name); c.SaveLayoutSoon(); }
 

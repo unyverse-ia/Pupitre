@@ -70,6 +70,7 @@ namespace Pupitre
         [DataMember] public string Rules;     // tri automatique : *.pdf; *.docx
         [DataMember] public bool HideFolder;
         [DataMember] public List<string> Seen; // fichiers récents déjà consultés (plus marqués « nouveau »)
+        [DataMember] public string Under;     // fusion : identifiant du cadre juste au-dessus dans la colonne (null = indépendant ou sommet)
 
         public CadreInfo() { Defaults(); }
         [OnDeserializing] void OnDeserializing(StreamingContext c) { Defaults(); }

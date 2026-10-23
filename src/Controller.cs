@@ -139,6 +139,7 @@ namespace Pupitre
             MindWin = new MindWindow(this);
             if (S.MindVisible) ShowMindWindow();
             InitProfiles();
+            Fusion.SyncAll(this);
 
             tray = new TrayIcon(this);
             watchdog = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
@@ -282,6 +283,7 @@ namespace Pupitre
                 Toast("Nouvelle configuration d'écrans « " + created.Name + " » : sa disposition sera mémorisée");
             }
             foreach (var w in DesktopWindows) if (w.IsVisible) w.AttachToDesktop();
+            Fusion.SyncAll(this);
         }
 
         // ---- Profils de disposition (une disposition automatique par configuration d'écrans + instantanés nommés) ----
@@ -378,6 +380,7 @@ namespace Pupitre
                     }
                     else if (!ci.Visible && w.IsVisible) w.Hide();
                 }
+                Fusion.SyncAll(this);
                 ApplyPanelGeom(p.Tasks, L.Tasks);
                 ApplyPanelGeom(p.Notes, L.NotesPanel);
                 if (p.Mind != null) { ApplyPanelGeom(p.Mind, L.MindPanel); S.MindVisible = p.MindVisible; }
@@ -536,6 +539,7 @@ namespace Pupitre
             bool ok = dlg.ShowDialog() == true;
             if (dlg.Deleted) { DeleteCadre(w); return; }
             if (!ok) return;
+            if (dlg.FusionChanged) Fusion.Attach(this, w, Fusion.ById(this, dlg.FusionTarget));
             w.ApplyInfo();
             w.ApplyLock();
             w.SetupWatchers();
@@ -555,6 +559,7 @@ namespace Pupitre
         public void DeleteCadre(CadreWindow w)
         {
             if (w.Info.IsDesktop) return;
+            Fusion.Detach(this, w);
             w.IntentionalClose = true;
             Cadres.Remove(w);
             L.Cadres.Remove(w.Info);
@@ -596,6 +601,9 @@ namespace Pupitre
         // ---- Visibilité, verrouillage, réglages --------------------------------------------------------
 
         /// <summary>Tous les panneaux visibles ramenés entièrement dans l'écran (zone de notification).</summary>
+        /// <summary>Un panneau a bougé, changé de taille ou s'est replié : les cadres fusionnés avec lui suivent.</summary>
+        public void OnGeometry(DesktopWindow w) { Fusion.Sync(this, w); }
+
         public void FitAllOnScreen() { foreach (var w in DesktopWindows) if (w.IsVisible) w.FitOnScreen(); }
 
         public void ToggleAll()

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -434,6 +435,10 @@ namespace Pupitre
         readonly RadioButton[] sizes = new RadioButton[4];
         readonly RadioButton[] sorts = new RadioButton[3];
         readonly CheckBox hide;
+        readonly RadioButton[] fusion;
+        readonly List<CadreWindow> fusionTargets;
+        public string FusionTarget;     // identifiant du sommet de colonne choisi (null : cadre indépendant)
+        public bool FusionChanged;
         public bool Deleted;
         bool saved;
 
@@ -476,6 +481,17 @@ namespace Pupitre
             foreach (var s in sorts) so.Children.Add(s);
             Panel.Children.Add(so);
 
+            Label("Fusion avec d'autres cadres");
+            fusionTargets = Fusion.Targets(ctl, w);
+            var top = Fusion.IsBelow(ctl, w) ? Fusion.Top(ctl, w) : null;
+            var fp = new WrapPanel();
+            fusion = new RadioButton[fusionTargets.Count + 1];
+            fusion[0] = Chip("Aucune (cadre indépendant)", "fusion", top == null);
+            fp.Children.Add(fusion[0]);
+            for (int i = 0; i < fusionTargets.Count; i++) { fusion[i + 1] = Chip("Sous « " + fusionTargets[i].Info.Name + " »", "fusion", top == fusionTargets[i]); fp.Children.Add(fusion[i + 1]); }
+            Panel.Children.Add(fp);
+            Note("Les cadres fusionnés forment une colonne : même largeur, collés l'un sous l'autre, déplacés ensemble ; chacun se replie sur son titre (double-clic) et se déplie. Les panneaux Tâches, Notes et Cartes mentales restent indépendants.");
+
             if (!info.IsDesktop)
             {
                 Label("Tri automatique : fichiers du bureau à ranger ici");
@@ -513,6 +529,11 @@ namespace Pupitre
             info.Color = look.Color; info.CustomColor = look.Custom; info.Opacity = look.Opacity; info.Locked = look.Locked;
             info.IconSize = sizes[0].IsChecked == true ? -1 : (sizes[1].IsChecked == true ? 0 : (sizes[2].IsChecked == true ? 1 : 2));
             info.Sort = sorts[1].IsChecked == true ? "type" : (sorts[2].IsChecked == true ? "date" : "name");
+            var curTop = Fusion.IsBelow(c, cadre) ? Fusion.Top(c, cadre) : null;
+            CadreWindow chosen = null;
+            for (int i = 0; i < fusionTargets.Count; i++) if (fusion[i + 1].IsChecked == true) chosen = fusionTargets[i];
+            FusionTarget = chosen != null ? chosen.Info.Id : null;
+            FusionChanged = chosen != curTop;
             if (!info.IsDesktop)
             {
                 string f = App.Norm(folderBox.Text.Trim());
