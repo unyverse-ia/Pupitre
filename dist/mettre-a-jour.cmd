@@ -38,6 +38,8 @@ for %%s in ("%NEW%") do if %%~zs LSS 500000 (
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Unblock-File -LiteralPath '%NEW%'" >nul 2>&1
 rem ---- 3) arret propre de Pupitre (il enregistre tout), remplacement, relance
 if not exist "%EXE%" goto :remplacer
+tasklist /fi "imagename eq Pupitre.exe" 2>nul | find /i "Pupitre.exe" >nul
+if errorlevel 1 goto :ferme
 "%EXE%" --quitter
 set /a N=0
 :attente
@@ -45,13 +47,25 @@ timeout /t 1 /nobreak >nul
 tasklist /fi "imagename eq Pupitre.exe" 2>nul | find /i "Pupitre.exe" >nul
 if errorlevel 1 goto :ferme
 set /a N+=1
-if %N% LSS 15 goto :attente
-echo  Pupitre ne s'est pas ferme : fermez-le (zone de notification, Quitter) puis relancez cette mise a jour.
+if %N% LSS 8 goto :attente
+echo.
+echo  Pupitre est encore ouvert (version installee plus ancienne, sans fermeture a distance).
+echo  Quittez-le a la main : icone Pupitre de la zone de notification, clic droit, Quitter.
+echo  Puis appuyez sur une touche pour continuer.
+pause >nul
+set /a N=0
+:attente2
+tasklist /fi "imagename eq Pupitre.exe" 2>nul | find /i "Pupitre.exe" >nul
+if errorlevel 1 goto :ferme
+timeout /t 1 /nobreak >nul
+set /a N+=1
+if %N% LSS 15 goto :attente2
+echo  Pupitre ne s'est pas ferme : relancez cette mise a jour une fois Pupitre quitte.
 del "%NEW%"
 goto :fin
 :ferme
 if exist "%OLD%" del "%OLD%"
-move /y "%EXE%" "%OLD%" >nul
+if exist "%EXE%" move /y "%EXE%" "%OLD%" >nul
 :remplacer
 move /y "%NEW%" "%EXE%" >nul
 echo  Pupitre mis a jour. Relance...

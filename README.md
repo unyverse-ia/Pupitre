@@ -149,6 +149,8 @@ ne touche ni tâches, ni notes, ni cartes, ni disposition. Les fichiers d'une ve
 - Automatique : `dist\mettre-a-jour.cmd` (double-clic, à côté de `Pupitre.exe`) copie d'abord les données dans
   `%APPDATA%\Pupitre\sauvegardes\<date_heure>`, télécharge la dernière version depuis GitHub, ferme proprement Pupitre
   (`Pupitre.exe --quitter`, qui enregistre tout), remplace l'exécutable (l'ancien reste en `Pupitre.precedent.exe`) et le relance.
+  Si la version installée est antérieure à cette commande de fermeture, le script demande de quitter Pupitre à la main
+  (zone de notification → Quitter), puis continue.
 - À la main : quitter Pupitre (icône de la zone de notification → Quitter), remplacer `Pupitre.exe` par celui du dépôt, relancer.
   Un fichier téléchargé peut déclencher l'avertissement SmartScreen (« Informations complémentaires » → « Exécuter quand même »).
 
