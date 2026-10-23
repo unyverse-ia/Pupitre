@@ -237,7 +237,7 @@ namespace Pupitre
         /// <summary>Nouvelle note en tête de liste, dépliée, titre en édition.</summary>
         public void AddNote()
         {
-            if (IsRolled) SetRolled(false, true);
+            if (IsRolled) SetRolled(false, false);   // sans animation : le champ Titre doit exister pour recevoir le focus
             var m = new NoteInfo { Id = Guid.NewGuid().ToString("N"), Title = "", Text = "", Color = NextColor(), Updated = DateTime.Now.ToString("s"), Expanded = true };
             c.L.Notes.Insert(0, m);
             var vm = new NoteVm(this, m);
@@ -331,7 +331,7 @@ namespace Pupitre
                 foot.SetBinding(TextBlock.TextProperty, new Binding("UpdatedText"));
                 DockPanel.SetDock(foot, Dock.Bottom);
                 root.Children.Add(foot);
-                var text = new TextBox { Style = Theme.Res<Style>("GhostTextBox"), Tag = "Texte de la note…", AcceptsReturn = true, AcceptsTab = true, TextWrapping = TextWrapping.Wrap, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, FontSize = 13.5, Padding = new Thickness(2), VerticalContentAlignment = VerticalAlignment.Top, DataContext = note, MinHeight = 72, MaxHeight = Math.Max(200, SystemParameters.WorkArea.Height - 260) };
+                var text = new TextBox { Style = Theme.Res<Style>("GhostTextBox"), Tag = "Texte de la note…", AcceptsReturn = true, AcceptsTab = true, TextWrapping = TextWrapping.Wrap, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, FontSize = 13.5, Padding = new Thickness(2), VerticalContentAlignment = VerticalAlignment.Top, DataContext = note, MinHeight = 72, MaxHeight = Math.Max(200, ScreenWorkHeight() - 260) };
                 text.SetBinding(TextBox.TextProperty, new Binding("Text") { UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged });
                 root.Children.Add(text);
                 PropertyChangedEventHandler onProp = delegate(object s, PropertyChangedEventArgs e) { if (e.PropertyName == "Title") w.SetTitle(note.Title.Length > 0 ? note.Title : "Note"); };
@@ -350,7 +350,7 @@ namespace Pupitre
             if (grip == null)
             {
                 // double-clic sur une carte (hors boutons et cases) : la note en grand dans une fenêtre
-                if (e.ClickCount != 2 || Ui.FindAncestor<ButtonBase>(e.OriginalSource as DependencyObject) != null) return;
+                if (e.ClickCount != 2 || Ui.FindAncestor<ButtonBase>(e.OriginalSource as DependencyObject) != null || Ui.FindAncestor<TextBox>(e.OriginalSource as DependencyObject) != null) return;
                 var card = Ui.HitTag(e.OriginalSource, "card");
                 var nv = card != null ? card.DataContext as NoteVm : null;
                 if (nv == null) return;

@@ -131,7 +131,7 @@ namespace Pupitre
             menuBtn = Theme.IconButton("IcoPlus", "Nouveau : tâche, cadre, note, carte mentale", 15);
             menuBtn.Click += delegate { ShowMenu(); };
 
-            saveDeb = new Debouncer(500, delegate { if (shownOnce && !SuppressSave) SaveRect(); });
+            saveDeb = new Debouncer(500, delegate { if (shownOnce && !SuppressSave && !IsFullScreen) SaveRect(); });   // plein écran : géométrie provisoire, jamais mémorisée
             LocationChanged += delegate { if (shownOnce && !SuppressSave) saveDeb.Trigger(); };
             SizeChanged += delegate { UpdateTitleLayout(); if (shownOnce && !SuppressSave) saveDeb.Trigger(); };
             Closed += delegate { if (!IntentionalClose) c.OnWindowLost(this); };
@@ -317,6 +317,16 @@ namespace Pupitre
             return (src != null && src.CompositionTarget != null) ? src.CompositionTarget.TransformToDevice.M11 : 1.0;
         }
 
+        /// <summary>Enregistre tout de suite une position ou une taille en attente (sortie de l'application).</summary>
+        public void FlushRect() { if (IsFullScreen) return; saveDeb.Flush(); }
+
+        /// <summary>Hauteur de l'espace de travail de l'écran qui affiche ce panneau, en unités WPF.</summary>
+        public double ScreenWorkHeight()
+        {
+            try { return WF.Screen.FromHandle(new WindowInteropHelper(this).Handle).WorkingArea.Height / DpiScale(); }
+            catch { return SystemParameters.WorkArea.Height; }
+        }
+
         // ---- Aimantation (bords d'écran et autres panneaux) ------------------------------------------
 
         int grabX, grabY;
@@ -391,16 +401,13 @@ namespace Pupitre
             List<int> xs, ys; Targets(out xs, out ys);
             int minW = (int)(MinWidth * scale), minH = (int)(MinHeight * scale);
             // au-delà du minimum, le bord s'arrête au minimum (et ne revient pas à la taille de départ)
-            if (left) { int v = r.Left + dx; if (th > 0) v += Shift(v, xs, th); r.Left = Math.Min(v, r.Right - minW); }
-            if (right) { int v = r.Right + dx; if (th > 0) v += Shift(v, xs, th); r.Right = Math.Max(v, r.Left + minW); }
-            if (top) { int v = r.Top + dy; if (th > 0) v += Shift(v, ys, th); r.Top = Math.Min(v, r.Bottom - minH); }
-            if (bottom) { int v = r.Bottom + dy; if (th > 0) v += Shift(v, ys, th); r.Bottom = Math.Max(v, r.Top + minH); }
-            // jamais au-delà de l'espace de travail de l'écran sous le curseur : les bords restent toujours accessibles
+            // jamais au-delà de l'espace de travail de l'écran sous le curseur (bords toujours accessibles), puis jamais
+            // sous la taille minimale : dans cet ordre, un bord tiré jusque sur l'autre écran ne dépasse pas le bord opposé
             var wa = WF.Screen.FromPoint(new System.Drawing.Point(cur.X, cur.Y)).WorkingArea;
-            if (left && r.Left < wa.Left) r.Left = wa.Left;
-            if (top && r.Top < wa.Top) r.Top = wa.Top;
-            if (right && r.Right > wa.Right) r.Right = wa.Right;
-            if (bottom && r.Bottom > wa.Bottom) r.Bottom = wa.Bottom;
+            if (left) { int v = r.Left + dx; if (th > 0) v += Shift(v, xs, th); if (v < wa.Left) v = wa.Left; r.Left = Math.Min(v, r.Right - minW); }
+            if (right) { int v = r.Right + dx; if (th > 0) v += Shift(v, xs, th); if (v > wa.Right) v = wa.Right; r.Right = Math.Max(v, r.Left + minW); }
+            if (top) { int v = r.Top + dy; if (th > 0) v += Shift(v, ys, th); if (v < wa.Top) v = wa.Top; r.Top = Math.Min(v, r.Bottom - minH); }
+            if (bottom) { int v = r.Bottom + dy; if (th > 0) v += Shift(v, ys, th); if (v > wa.Bottom) v = wa.Bottom; r.Bottom = Math.Max(v, r.Top + minH); }
             Left = r.Left / scale; Top = r.Top / scale; Width = r.Width / scale; Height = r.Height / scale;
         }
 
@@ -546,7 +553,7 @@ namespace Pupitre
         /// <summary>Plein écran (tout l'espace de travail) et retour à la taille précédente ; sans mémoire du précédent, taille par défaut.</summary>
         public void ToggleFullScreen()
         {
-            if (IsLocked) return;
+            if (IsLocked) { c.Toast("Panneau verrouillé : plein écran indisponible (déverrouiller dans les paramètres du panneau)"); return; }
             if (rolled) SetRolled(false, false);
             if (IsFullScreen)
             {
@@ -616,8 +623,7 @@ namespace Pupitre
 
         Rect ValidRect(double x, double y, double w, double h)
         {
-            double scale = 1.0;
-            try { scale = 1.0 / DpiScale(); } catch { }
+            double scale = Controller.Scale();   // DPI système : valable avant le premier affichage, où DpiScale() vaut 1
             var prim = WF.Screen.PrimaryScreen.WorkingArea;
             if (w < MinWidth) w = Math.Max(MinWidth, 320);
             if (h < TitleH) h = Math.Max(MinHeight, 240);

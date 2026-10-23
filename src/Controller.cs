@@ -29,7 +29,8 @@ namespace Pupitre
             {
                 if (msg == Native.WM_HOTKEY) { c.OnHotkey((int)(w.ToInt64() & 0xFFFF)); handled = true; }
                 else if (msg == Native.WM_DISPLAYCHANGE || msg == Native.WM_SETTINGCHANGE) c.OnDisplayChange();
-                else if (msg == Native.WM_QUERYENDSESSION || msg == Native.WM_ENDSESSION) c.FlushAll(true);
+                else if (msg == Native.WM_QUERYENDSESSION) c.FlushAll(false);                 // la fermeture peut encore être annulée
+                else if (msg == Native.WM_ENDSESSION) c.FlushAll(w != IntPtr.Zero);          // wParam : la session se termine
                 return IntPtr.Zero;
             });
         }
@@ -258,8 +259,10 @@ namespace Pupitre
         void ReplaceAll()
         {
             if (Exiting) return;
-            screenSignature = ScreenSignature();
+            string ss = ScreenSignature();
             string sig = ProfileSignature();
+            if (ss == screenSignature && sig == handledSignature) return;   // fond d'écran, thème… : pas un changement d'écrans
+            screenSignature = ss;
             DesktopHost = Native.FindDesktopHost();
             var profile = L.Profiles.FirstOrDefault(p => p.Auto && p.Signature == sig);
             if (profile != null)
@@ -347,6 +350,7 @@ namespace Pupitre
 
         void InitProfiles()
         {
+            screenSignature = ScreenSignature();
             string sig = ProfileSignature();
             var p = L.Profiles.FirstOrDefault(x => x.Auto && x.Signature == sig);
             if (p != null) ApplyProfile(p);
@@ -474,6 +478,7 @@ namespace Pupitre
         {
             S.MindVisible = visible;
             SaveSettings();
+            SaveLayoutSoon();      // la disposition automatique mémorise aussi la visibilité
             if (MindWin == null) return;
             if (visible && !AllHidden) { if (!MindWin.IsVisible) ShowMindWindow(); }
             else MindWin.Hide();
@@ -607,6 +612,7 @@ namespace Pupitre
         {
             S.TasksVisible = visible;
             SaveSettings();
+            SaveLayoutSoon();      // la disposition automatique mémorise aussi la visibilité
             if (TasksWin == null) return;
             if (visible && !AllHidden) { if (!TasksWin.IsVisible) ShowTasksWindow(); }
             else TasksWin.Hide();
@@ -616,6 +622,7 @@ namespace Pupitre
         {
             S.NotesVisible = visible;
             SaveSettings();
+            SaveLayoutSoon();      // la disposition automatique mémorise aussi la visibilité
             if (NotesWin == null) return;
             if (visible && !AllHidden) { if (!NotesWin.IsVisible) ShowNotesWindow(); }
             else NotesWin.Hide();
@@ -659,6 +666,7 @@ namespace Pupitre
                 if (S.MindVisible && !AllHidden && !MindWin.IsVisible) ShowMindWindow();
                 else if (!S.MindVisible && MindWin.IsVisible) MindWin.Hide();
             }
+            SaveLayoutSoon();      // visibilité et verrou mémorisés dans la disposition automatique
             Tasks.Rebuild();
             SetupDesktopWatcher();
             SaveSettings();
@@ -792,6 +800,8 @@ namespace Pupitre
         {
             try
             {
+                foreach (var w in DesktopWindows) w.FlushRect();      // dernier déplacement, redimensionnement ou enroulement
+                if (MindWin != null) MindWin.Flush();                  // dernière modification d'une carte
                 if (layoutDeb != null) layoutDeb.Flush();
                 if (Tasks != null) Tasks.Save();
                 if (L != null) Json.Save(LayoutPath, L);
@@ -807,8 +817,8 @@ namespace Pupitre
         public void Quit()
         {
             if (Exiting) return;
+            FlushAll(true);      // avant Exiting : la disposition automatique doit être resynchronisée (UpdateAutoProfile)
             Exiting = true;
-            FlushAll(true);
             Dispose();
             app.Shutdown();
         }

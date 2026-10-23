@@ -98,7 +98,7 @@ namespace Pupitre
                 Effect = new DropShadowEffect { BlurRadius = 22, ShadowDepth = 3, Opacity = 0.55, Color = Colors.Black }
             };
             PreviewKeyDown += delegate(object s, KeyEventArgs e) { if (e.Key == Key.Escape) { Close(); e.Handled = true; } };
-            Loaded += delegate { ClampToScreen(); };
+            Loaded += delegate { LimitToScreen(); ClampToScreen(); };
             SizeChanged += delegate { if (IsLoaded) ClampToScreen(); };
             if (owner != null) owner.IsVisibleChanged += OwnerVisibleChanged;
             Closed += delegate
@@ -136,6 +136,19 @@ namespace Pupitre
         }
 
         /// <summary>Garde la fiche entièrement visible sur l'écran où elle s'ouvre (le panneau est souvent en bas de l'écran).</summary>
+        /// <summary>Hauteur maximale d'après l'écran qui affiche la fiche (pas seulement l'écran principal).</summary>
+        void LimitToScreen()
+        {
+            try
+            {
+                var wa = WF.Screen.FromHandle(new WindowInteropHelper(this).Handle).WorkingArea;
+                var src = PresentationSource.FromVisual(this);
+                double scale = (src != null && src.CompositionTarget != null) ? src.CompositionTarget.TransformToDevice.M22 : 1.0;
+                MaxHeight = Math.Max(300, wa.Height / scale - 40);
+            }
+            catch { }
+        }
+
         void ClampToScreen()
         {
             try

@@ -28,39 +28,39 @@ namespace Pupitre
             styleStack = new StackPanel { Margin = new Thickness(8, 4, 6, 12) };
 
             var structures = new WrapPanel();
-            foreach (var i in StructureOrder) { int v = i; AddThumb(structures, "structure", v, ShortStructure(v), StructureNames[v], delegate(Canvas cv, bool sel) { DrawStructure(cv, v, sel); }, delegate { Snapshot(); map.Layout = v; Render(); Fit(); }); }
+            foreach (var i in StructureOrder) { int v = i; AddThumb(structures, "structure", v, ShortStructure(v), StructureNames[v], delegate(Canvas cv, bool sel) { DrawStructure(cv, v, sel); }, delegate { Snapshot(); map.Layout = v; Changed(); Fit(); }); }
             Section("Structure", structures);
 
             var themes = new WrapPanel();
-            for (int i = 0; i < ThemeNames.Length; i++) { int v = i; AddThumb(themes, "theme", v, ThemeNames[v].Split(' ')[0], ThemeNames[v], delegate(Canvas cv, bool sel) { DrawTheme(cv, v); }, delegate { Snapshot(); map.Theme = v; Render(); }); }
+            for (int i = 0; i < ThemeNames.Length; i++) { int v = i; AddThumb(themes, "theme", v, ThemeNames[v].Split(' ')[0], ThemeNames[v], delegate(Canvas cv, bool sel) { DrawTheme(cv, v); }, delegate { Snapshot(); map.Theme = v; Changed(); }); }
             Section("Thème", themes);
 
             var palettes = new WrapPanel();
-            for (int i = 0; i < PaletteNames.Length; i++) { int v = i; AddThumb(palettes, "palette", v, PaletteNames[v], "Palette " + PaletteNames[v], delegate(Canvas cv, bool sel) { DrawPalette(cv, v); }, delegate { Snapshot(); map.Palette = v; Render(); }); }
+            for (int i = 0; i < PaletteNames.Length; i++) { int v = i; AddThumb(palettes, "palette", v, PaletteNames[v], "Palette " + PaletteNames[v], delegate(Canvas cv, bool sel) { DrawPalette(cv, v); }, delegate { Snapshot(); map.Palette = v; Changed(); }); }
             var pToggles = new WrapPanel();
-            pToggles.Children.Add(ToggleChip("mono", 0, "Branches colorées", delegate { Snapshot(); map.Mono = !map.Mono; Render(); }));
-            pToggles.Children.Add(ToggleChip("tapered", 1, "Lignes effilées", delegate { Snapshot(); map.Tapered = !map.Tapered; Render(); }));
+            pToggles.Children.Add(ToggleChip("mono", 0, "Branches colorées", delegate { Snapshot(); map.Mono = !map.Mono; Changed(); }));
+            pToggles.Children.Add(ToggleChip("tapered", 1, "Lignes effilées", delegate { Snapshot(); map.Tapered = !map.Tapered; Changed(); }));
             var palBlock = new StackPanel(); palBlock.Children.Add(palettes); palBlock.Children.Add(pToggles);
             Section("Couleurs des branches", palBlock);
 
             var shapes = new WrapPanel();
-            for (int i = 0; i < MapShapeNames.Length; i++) { int v = i + 1; AddThumb(shapes, "shape", v, MapShapeNames[i], "Forme des sujets : " + MapShapeNames[i], delegate(Canvas cv, bool sel) { DrawShape(cv, v, 34, 16); }, delegate { Snapshot(); map.Shape = v; Render(); }); }
+            for (int i = 0; i < MapShapeNames.Length; i++) { int v = i + 1; AddThumb(shapes, "shape", v, MapShapeNames[i], "Forme des sujets : " + MapShapeNames[i], delegate(Canvas cv, bool sel) { DrawShape(cv, v, 34, 16); }, delegate { Snapshot(); map.Shape = v; Changed(); }); }
             Section("Forme des sujets", shapes);
 
             var lines = new WrapPanel();
-            for (int i = 0; i < LineNames.Length; i++) { int v = i; AddThumb(lines, "line", v, LineNames[v], "Lignes " + LineNames[v].ToLowerInvariant(), delegate(Canvas cv, bool sel) { DrawLineStyle(cv, v); }, delegate { Snapshot(); map.LineStyle = v; Render(); }); }
-            for (int i = 0; i < WidthNames.Length; i++) { int v = i; AddThumb(lines, "width", v, WidthNames[v], "Épaisseur : " + WidthNames[v].ToLowerInvariant(), delegate(Canvas cv, bool sel) { DrawLineWidth(cv, v); }, delegate { Snapshot(); map.LineWidth = v; Render(); }); }
+            for (int i = 0; i < LineNames.Length; i++) { int v = i; AddThumb(lines, "line", v, LineNames[v], "Lignes " + LineNames[v].ToLowerInvariant(), delegate(Canvas cv, bool sel) { DrawLineStyle(cv, v); }, delegate { Snapshot(); map.LineStyle = v; Changed(); }); }
+            for (int i = 0; i < WidthNames.Length; i++) { int v = i; AddThumb(lines, "width", v, WidthNames[v], "Épaisseur : " + WidthNames[v].ToLowerInvariant(), delegate(Canvas cv, bool sel) { DrawLineWidth(cv, v); }, delegate { Snapshot(); map.LineWidth = v; Changed(); }); }
             Section("Lignes", lines);
 
             var spacing = new WrapPanel();
-            for (int i = 0; i < SpacingNames.Length; i++) { int v = i; AddThumb(spacing, "spacing", v, SpacingNames[v], "Espacement " + SpacingNames[v].ToLowerInvariant(), delegate(Canvas cv, bool sel) { DrawSpacing(cv, v); }, delegate { Snapshot(); map.Spacing = v; Render(); }); }
+            for (int i = 0; i < SpacingNames.Length; i++) { int v = i; AddThumb(spacing, "spacing", v, SpacingNames[v], "Espacement " + SpacingNames[v].ToLowerInvariant(), delegate(Canvas cv, bool sel) { DrawSpacing(cv, v); }, delegate { Snapshot(); map.Spacing = v; Changed(); }); }
             Section("Espacement", spacing);
 
             var numbers = new WrapPanel();
             string[] numSamples = { "—", "1 2 3", "a b c", "i ii iii" };
-            for (int i = 0; i < NumberNames.Length; i++) { int v = i; AddThumb(numbers, "number", v, i == 0 ? "Aucune" : NumberNames[i].Split(' ')[0], NumberNames[i], delegate(Canvas cv, bool sel) { DrawText(cv, numSamples[v], 12); }, delegate { Snapshot(); map.NumberStyle = v; Render(); }); }
+            for (int i = 0; i < NumberNames.Length; i++) { int v = i; AddThumb(numbers, "number", v, i == 0 ? "Aucune" : NumberNames[i].Split(' ')[0], NumberNames[i], delegate(Canvas cv, bool sel) { DrawText(cv, numSamples[v], 12); }, delegate { Snapshot(); map.NumberStyle = v; Changed(); }); }
             var nToggles = new WrapPanel();
-            nToggles.Children.Add(ToggleChip("tiered", 1, "Hiérarchique (1.2.1)", delegate { Snapshot(); map.Tiered = !map.Tiered; Render(); }));
+            nToggles.Children.Add(ToggleChip("tiered", 1, "Hiérarchique (1.2.1)", delegate { Snapshot(); map.Tiered = !map.Tiered; Changed(); }));
             var numBlock = new StackPanel(); numBlock.Children.Add(numbers); numBlock.Children.Add(nToggles);
             Section("Numérotation", numBlock);
 

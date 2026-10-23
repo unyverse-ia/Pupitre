@@ -137,7 +137,7 @@ namespace Pupitre
             viewport.MouseLeftButtonDown += ViewportDown;
             viewport.MouseMove += ViewportMove;
             viewport.MouseLeftButtonUp += ViewportUp;
-            viewport.LostMouseCapture += delegate { EndMouse(); };
+            viewport.LostMouseCapture += delegate { if (dragging) CancelDrag(); else EndMouse(); };
             viewport.MouseRightButtonUp += ViewportRight;
             viewport.MouseWheel += ViewportWheel;
             viewport.SizeChanged += delegate { if (fitPending) { fitPending = false; Fit(); } };
@@ -192,7 +192,7 @@ namespace Pupitre
 
         void SelectMap(MindMap m)
         {
-            if (m == null) return;
+            if (m == null || m == map) return;
             if (editing != null) EndEdit(true);
             map = m; store.CurrentId = m.Id; undo.Clear(); redo.Clear(); focus = null; selected = m.Root; relFrom = null; searchText = ""; searchHits.Clear();
             StabilizeSides();
@@ -220,7 +220,7 @@ namespace Pupitre
         {
             var root = MindJson.CloneNode(n);
             foreach (var d in All(root)) d.Id = NewId();
-            root.Side = 0; root.Boundary = false; root.Summary = null;
+            root.Side = 0; root.Boundary = false; root.Summary = null; root.Collapsed = false;
             var m = new MindMap { Id = NewId(), Name = Label(n), Created = Now(), Updated = Now(), Root = root, Zoom = 1, Theme = map.Theme, Palette = map.Palette, Layout = map.Layout, LineStyle = map.LineStyle, LineWidth = map.LineWidth, Spacing = map.Spacing, Shape = map.Shape, NumberStyle = map.NumberStyle, Tiered = map.Tiered, Mono = map.Mono, Tapered = map.Tapered };
             store.Maps.Add(m);
             SelectMap(m);
@@ -253,6 +253,20 @@ namespace Pupitre
         }
 
         MindNode ParentOf(MindNode n) { MindNode p; return parentOf.TryGetValue(n, out p) ? p : null; }
+        /// <summary>Parent d'après le modèle (la table parentOf ne couvre que la vue courante, p. ex. en affichage d'une seule branche).</summary>
+        MindNode RealParentOf(MindNode n) { foreach (var a in AllNodes()) if (a.Children.Contains(n)) return a; return null; }
+        /// <summary>Déplie un sujet et tous ses ancêtres : ce qu'on vient d'y ajouter doit être visible.</summary>
+        void UnfoldAncestors(MindNode n) { for (var a = n; a != null; a = ParentOf(a) ?? RealParentOf(a)) a.Collapsed = false; }
+        /// <summary>Après remplacement de la carte (annuler, rétablir, glisser annulé) : sélection, focus et résultats de recherche réaccrochés par identifiant.</summary>
+        void RemapRefs(string selId, string focusId)
+        {
+            focus = focusId != null ? AllNodes().FirstOrDefault(n => n.Id == focusId) : null;
+            selected = (selId != null ? AllNodes().FirstOrDefault(n => n.Id == selId) : null) ?? map.Root;
+            var ids = searchHits.Select(h => h.Id).ToList();
+            searchHits.Clear();
+            foreach (var id in ids) { var h = AllNodes().FirstOrDefault(x => x.Id == id); if (h != null) searchHits.Add(h); }
+            if (searchIndex >= searchHits.Count) searchIndex = 0;
+        }
 
         bool IsDescendant(MindNode node, MindNode ancestor)
         {
@@ -278,9 +292,7 @@ namespace Pupitre
             var restored = MindJson.FromText(json);
             restored.Zoom = map.Zoom; restored.PanX = map.PanX; restored.PanY = map.PanY;
             store.Maps[store.Maps.IndexOf(map)] = restored; map = restored;
-            string selId = selected != null ? selected.Id : null, focusId = focus != null ? focus.Id : null;
-            focus = focusId != null ? AllNodes().FirstOrDefault(n => n.Id == focusId) : null;
-            selected = AllNodes().FirstOrDefault(n => n.Id == selId) ?? map.Root;
+            RemapRefs(selected != null ? selected.Id : null, focus != null ? focus.Id : null);
             Render();
             saveDeb.Trigger();
         }
@@ -331,7 +343,7 @@ namespace Pupitre
             var n = new MindNode { Id = NewId(), Text = "" };
             if (target == RootNode && SidedLayout) n.Side = side != 0 ? side : BalanceSide();
             target.Children.Add(n);
-            target.Collapsed = false;
+            UnfoldAncestors(target);
             selected = n;
             Changed();
             BeginEdit(n);
@@ -345,6 +357,7 @@ namespace Pupitre
             Snapshot();
             var n = new MindNode { Id = NewId(), Text = "", Side = selected.Side };
             p.Children.Insert(p.Children.IndexOf(selected) + 1, n);
+            UnfoldAncestors(p);
             selected = n;
             Changed();
             BeginEdit(n);
@@ -360,6 +373,7 @@ namespace Pupitre
             var np = new MindNode { Id = NewId(), Text = "", Side = selected.Side };
             p.Children[p.Children.IndexOf(selected)] = np;
             np.Children.Add(selected);
+            UnfoldAncestors(p);
             selected.Side = 0;
             selected = np;
             Changed();
@@ -386,7 +400,8 @@ namespace Pupitre
             string what = "« " + Label(selected) + " »" + (n > 0 ? " et ses " + n + " sous-sujet" + (n > 1 ? "s" : "") : "");
             if (!Dialogs.Confirm(this, "Supprimer le sujet", "Supprimer " + what + " ?", "Supprimer", true)) return;
             Snapshot();
-            var p = ParentOf(selected);
+            if (selected == focus) focus = null;                        // branche affichée seule : retour à toute la carte
+            var p = ParentOf(selected) ?? RealParentOf(selected);
             if (p == null) { map.Floating.Remove(selected); selected = map.Root; }
             else
             {
@@ -402,7 +417,8 @@ namespace Pupitre
         {
             if (selected == null || selected == map.Root) return;
             Snapshot();
-            var p = ParentOf(selected);
+            if (selected == focus) focus = null;
+            var p = ParentOf(selected) ?? RealParentOf(selected);
             if (p == null)
             {
                 map.Floating.Remove(selected);
@@ -426,7 +442,7 @@ namespace Pupitre
             Snapshot();
             var copy = MindJson.CloneNode(selected);
             foreach (var d in All(copy)) d.Id = NewId();
-            var p = ParentOf(selected);
+            var p = ParentOf(selected) ?? RealParentOf(selected);
             if (p == null) { copy.X = selected.X + 30; copy.Y = selected.Y + 30; map.Floating.Add(copy); }
             else p.Children.Insert(p.Children.IndexOf(selected) + 1, copy);
             selected = copy;
@@ -447,7 +463,7 @@ namespace Pupitre
             var into = selected ?? map.Root;
             Snapshot();
             ParseOutline(text, into, false);
-            into.Collapsed = false;
+            UnfoldAncestors(into);
             Changed();
         }
 
@@ -467,14 +483,18 @@ namespace Pupitre
         int InsertIndex(MindNode parent, MindNode node, Point at, int side)
         {
             bool byX = map.Layout == 2 || map.Layout == 7 || (parent == RootNode && (map.Layout == 5 || map.Layout == 6));
+            // les piles « vers le haut » (chronologies, arêtes de poisson) rangent le premier enfant le plus près du parent : ordre inversé
+            var cands = new List<KeyValuePair<int, double>>();
             for (int i = 0; i < parent.Children.Count; i++)
             {
                 var ch = parent.Children[i]; Box cb;
                 if (ch == node || !boxes.TryGetValue(ch, out cb)) continue;
                 if (parent == RootNode && side != 0 && SideOf(ch, i) != side) continue;
-                double c = byX ? cb.X + cb.W / 2 : cb.Y + cb.H / 2, v = byX ? at.X : at.Y;
-                if (v < c) return i;
+                cands.Add(new KeyValuePair<int, double>(i, byX ? cb.X + cb.W / 2 : cb.Y + cb.H / 2));
             }
+            double v = byX ? at.X : at.Y;
+            bool reversed = cands.Count >= 2 && cands[1].Value < cands[0].Value;
+            foreach (var kv in cands) if (reversed ? v > kv.Value : v < kv.Value) return kv.Key;
             return parent.Children.Count;
         }
 
@@ -818,7 +838,7 @@ namespace Pupitre
                 var restored = MindJson.FromText(snap);
                 restored.Zoom = map.Zoom; restored.PanX = map.PanX; restored.PanY = map.PanY;
                 store.Maps[store.Maps.IndexOf(map)] = restored; map = restored;
-                selected = AllNodes().FirstOrDefault(x => selected != null && x.Id == selected.Id) ?? map.Root;
+                RemapRefs(selected != null ? selected.Id : null, focus != null ? focus.Id : null);
                 Render();
             }
         }
@@ -893,7 +913,8 @@ namespace Pupitre
         {
             if (editing != null || selected == null || relFrom != null) return;
             if (Keyboard.FocusedElement is TextBox) return;
-            if ((Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Alt)) != 0) return;
+            bool mc = (Keyboard.Modifiers & ModifierKeys.Control) != 0, ma = (Keyboard.Modifiers & ModifierKeys.Alt) != 0;
+            if (mc != ma) return;   // Ctrl seul ou Alt seul : raccourci ; Ctrl+Alt (AltGr) : caractère légitime
             string t = e.Text;
             if (string.IsNullOrEmpty(t) || char.IsWhiteSpace(t[0]) || char.IsControl(t[0])) return;
             var n = selected;
@@ -935,9 +956,9 @@ namespace Pupitre
             if (n != map.Root && bare && (empty && (commit || wasNew) || (!commit && wasNew)))
             {
                 // sujet laissé vide : retiré sans confirmation (Whimsical, MindNode)
-                var p = ParentOf(n);
+                if (!wasNew) Snapshot(); else if (undo.Count > 0) undo.RemoveAt(undo.Count - 1);   // sujet existant vidé : annulable
+                var p = ParentOf(n) ?? RealParentOf(n);
                 if (p != null) { int idx = p.Children.IndexOf(n); p.Children.Remove(n); selected = idx > 0 ? p.Children[idx - 1] : p; } else { map.Floating.Remove(n); selected = map.Root; }
-                if (wasNew && undo.Count > 0) undo.RemoveAt(undo.Count - 1);
                 Changed();
             }
             else if (commit && t != (n.Text ?? "")) { if (!wasNew) Snapshot(); n.Text = t; Changed(); }
@@ -954,6 +975,7 @@ namespace Pupitre
             var key = e.Key == Key.System ? e.SystemKey : e.Key;
             bool ctrl = (Keyboard.Modifiers & ModifierKeys.Control) != 0, shift = (Keyboard.Modifiers & ModifierKeys.Shift) != 0, alt = (Keyboard.Modifiers & ModifierKeys.Alt) != 0;
             bool slash = key == Key.Oem2 || key == Key.OemQuestion || key == Key.Divide;
+            if (ctrl && alt && !slash) return;   // AltGr (Ctrl+Alt sur clavier français) : caractère spécial, pas un raccourci
             switch (key)
             {
                 case Key.Tab: AddChild(); break;
@@ -1167,23 +1189,37 @@ namespace Pupitre
         void FillStyle(ItemsControl menu)
         {
             var structure = new MenuItem { Header = "Structure" };
-            foreach (var i in StructureOrder) { int v = i; structure.Items.Add(Check(StructureNames[i], map.Layout == i, delegate { Snapshot(); map.Layout = v; Render(); Fit(); })); }
+            foreach (var i in StructureOrder) { int v = i; structure.Items.Add(Check(StructureNames[i], map.Layout == i, delegate { Snapshot(); map.Layout = v; Changed(); Fit(); })); }
             menu.Items.Add(structure);
-            menu.Items.Add(Choice("Thème", ThemeNames, map.Theme, delegate(int v) { Snapshot(); map.Theme = v; Render(); }));
-            menu.Items.Add(Choice("Palette des branches", PaletteNames, map.Palette, delegate(int v) { Snapshot(); map.Palette = v; Render(); }));
-            menu.Items.Add(Check("Branches colorées (arc-en-ciel)", !map.Mono, delegate { Snapshot(); map.Mono = !map.Mono; Render(); }));
-            menu.Items.Add(Check("Lignes effilées", map.Tapered, delegate { Snapshot(); map.Tapered = !map.Tapered; Render(); }));
-            menu.Items.Add(Choice("Forme des sujets", MapShapeNames, Math.Max(0, map.Shape - 1), delegate(int v) { Snapshot(); map.Shape = v + 1; Render(); }));
-            menu.Items.Add(Choice("Lignes", LineNames, map.LineStyle, delegate(int v) { Snapshot(); map.LineStyle = v; Render(); }));
-            menu.Items.Add(Choice("Épaisseur des lignes", WidthNames, map.LineWidth, delegate(int v) { Snapshot(); map.LineWidth = v; Render(); }));
-            menu.Items.Add(Choice("Espacement", SpacingNames, map.Spacing, delegate(int v) { Snapshot(); map.Spacing = v; Render(); }));
-            var num = Choice("Numérotation", NumberNames, map.NumberStyle, delegate(int v) { Snapshot(); map.NumberStyle = v; Render(); });
+            menu.Items.Add(Choice("Thème", ThemeNames, map.Theme, delegate(int v) { Snapshot(); map.Theme = v; Changed(); }));
+            menu.Items.Add(Choice("Palette des branches", PaletteNames, map.Palette, delegate(int v) { Snapshot(); map.Palette = v; Changed(); }));
+            menu.Items.Add(Check("Branches colorées (arc-en-ciel)", !map.Mono, delegate { Snapshot(); map.Mono = !map.Mono; Changed(); }));
+            menu.Items.Add(Check("Lignes effilées", map.Tapered, delegate { Snapshot(); map.Tapered = !map.Tapered; Changed(); }));
+            menu.Items.Add(Choice("Forme des sujets", MapShapeNames, Math.Max(0, map.Shape - 1), delegate(int v) { Snapshot(); map.Shape = v + 1; Changed(); }));
+            menu.Items.Add(Choice("Lignes", LineNames, map.LineStyle, delegate(int v) { Snapshot(); map.LineStyle = v; Changed(); }));
+            menu.Items.Add(Choice("Épaisseur des lignes", WidthNames, map.LineWidth, delegate(int v) { Snapshot(); map.LineWidth = v; Changed(); }));
+            menu.Items.Add(Choice("Espacement", SpacingNames, map.Spacing, delegate(int v) { Snapshot(); map.Spacing = v; Changed(); }));
+            var num = Choice("Numérotation", NumberNames, map.NumberStyle, delegate(int v) { Snapshot(); map.NumberStyle = v; Changed(); });
             num.Items.Add(new Separator());
-            num.Items.Add(Check("Hiérarchique (1.2.1)", map.Tiered, delegate { Snapshot(); map.Tiered = !map.Tiered; Render(); }));
+            num.Items.Add(Check("Hiérarchique (1.2.1)", map.Tiered, delegate { Snapshot(); map.Tiered = !map.Tiered; Changed(); }));
             menu.Items.Add(num);
             menu.Items.Add(new Separator());
-            menu.Items.Add(Item("Tout déplier", null, delegate { Snapshot(); foreach (var n in AllNodes()) n.Collapsed = false; Render(); }));
-            menu.Items.Add(Item("Replier au premier niveau  (Ctrl+Alt+/)", null, delegate { Snapshot(); foreach (var ch in RootNode.Children) ch.Collapsed = ch.Children.Count > 0; Render(); }));
+            menu.Items.Add(Item("Tout déplier", null, delegate { Snapshot(); foreach (var n in AllNodes()) n.Collapsed = false; Changed(); }));
+            menu.Items.Add(Item("Replier au premier niveau  (Ctrl+Alt+/)", null, delegate { Snapshot(); foreach (var ch in RootNode.Children) ch.Collapsed = ch.Children.Count > 0; Changed(); }));
+        }
+
+        string OutlineAll()
+        {
+            var sb = new System.Text.StringBuilder(Outline(map.Root, 0));
+            foreach (var f in map.Floating) sb.Append(Outline(f, 0));
+            return sb.ToString();
+        }
+
+        string MarkdownAll()
+        {
+            var sb = new System.Text.StringBuilder(Markdown(map.Root));
+            foreach (var f in map.Floating) { sb.AppendLine(); MarkdownRec(sb, f, 0); }
+            return sb.ToString();
         }
 
         void ShowExportMenu(UIElement anchor)
@@ -1191,14 +1227,17 @@ namespace Pupitre
             var menu = new ContextMenu();
             menu.Items.Add(Item("Enregistrer en image (PNG)…", "IcoCopy", delegate { ExportPng(false); }));
             menu.Items.Add(Item("Copier l'image", "IcoCopy", delegate { ExportPng(true); }));
-            menu.Items.Add(Item("Copier le plan (texte indenté)", "IcoList", delegate { try { Clipboard.SetText(Outline(map.Root, 0)); c.Toast("Plan copié dans le presse-papiers"); } catch { } }));
-            menu.Items.Add(Item("Copier en Markdown", "IcoList", delegate { try { Clipboard.SetText(Markdown(map.Root)); c.Toast("Markdown copié dans le presse-papiers"); } catch { } }));
+            menu.Items.Add(Item("Copier le plan (texte indenté)", "IcoList", delegate { try { Clipboard.SetText(OutlineAll()); c.Toast("Plan copié dans le presse-papiers"); } catch { } }));
+            menu.Items.Add(Item("Copier en Markdown", "IcoList", delegate { try { Clipboard.SetText(MarkdownAll()); c.Toast("Markdown copié dans le presse-papiers"); } catch { } }));
             menu.Items.Add(new Separator());
             menu.Items.Add(Item("Importer un plan ou du Markdown…", "IcoPlus", ImportOutline));
             Open(menu, anchor);
         }
 
         // ---- panneau ---------------------------------------------------------------------------------------------------
+
+        /// <summary>Enregistre tout de suite une modification en attente (sortie de l'application).</summary>
+        public void Flush() { saveDeb.Flush(); }
 
         protected override bool CanRename { get { return false; } }
         protected override string SettingsTooltip { get { return "Paramètres du panneau (couleur, opacité, verrou)"; } }

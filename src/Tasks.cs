@@ -45,7 +45,6 @@ namespace Pupitre
                     w = w.Substring(0, w.Length - trailing);
                     if (w.Length == 0) continue;
                 }
-                if (w.Length > 1 && w[0] == '#') { tags.Add(w.Substring(1)); continue; }
                 DateTime d;
                 if (w.Length > 1 && w[0] == '@' && TryDate(w.Substring(1), out d)) { due = d; continue; }
                 title.Add(w);
@@ -220,7 +219,7 @@ namespace Pupitre
         public bool IsOpen
         {
             get { return !M.Collapsed || owner.FilterActive; }
-            set { if (M.Collapsed == value) { M.Collapsed = !value; Notify("IsOpen"); Notify("ChevronData"); Notify("HeadRadius"); owner.Changed(this, false); } }
+            set { if (owner.FilterActive) return; if (M.Collapsed == value) { M.Collapsed = !value; Notify("IsOpen"); Notify("ChevronData"); Notify("HeadRadius"); owner.Changed(this, false); } }
         }
         public bool DoneOpen
         {
@@ -261,7 +260,7 @@ namespace Pupitre
             {
                 if (!IsCategory) return "";
                 int open = Children.Count(t => !t.IsDone), done = Children.Count - open;
-                string s = open + " en cours";
+                string s = open + (open > 1 ? " ouvertes" : " ouverte");
                 if (done > 0) s += " · " + done + " terminée" + (done > 1 ? "s" : "");
                 return s;
             }
@@ -292,7 +291,7 @@ namespace Pupitre
             M.Completed = done ? DateTime.Now.ToString("s") : null;
             AddComment("Étape → " + def.Name, true);
             if (done) { IsEditing = false; if (Parent != null) Parent.DoneOpen = true; }
-            NotifyStage(); Notify("IsDone"); Notify("Strike"); Notify("RowOpacity"); Notify("DoneAtText"); Notify("GripVisibility"); Notify("DueFg"); Notify("DueBg");
+            NotifyStage(); Notify("IsDone"); Notify("Strike"); Notify("RowOpacity"); Notify("DoneAtText"); Notify("GripVisibility"); RefreshDue();
             owner.Changed(this, true);
         }
         public string ServiceId { get { return M.ServiceId; } }
@@ -556,7 +555,7 @@ namespace Pupitre
             if (ServiceFilter.Count > 0 && (theme.ServiceId == null || !ServiceFilter.Contains(theme.ServiceId))) return false;
             if (Search.Length > 0)
             {
-                var sb = new StringBuilder(theme.Title).Append(' ').Append(theme.SvcName);
+                var sb = new StringBuilder(theme.Title).Append(' ').Append(theme.HasService ? theme.SvcName : "");
                 foreach (var k in theme.Children) sb.Append(' ').Append(k.Title);
                 foreach (var cm in theme.M.Comments) sb.Append(' ').Append(cm.Text);
                 if (sb.ToString().IndexOf(Search, StringComparison.CurrentCultureIgnoreCase) < 0) return false;
@@ -581,21 +580,19 @@ namespace Pupitre
         /// <summary>Relie parents et enfants, applique filtres et recherche, remplit les listes affichées.</summary>
         public void Rebuild()
         {
-            if (All.Any(t => t.IsEditing)) { rebuildDeb.Trigger(); return; }
+            // une saisie en cours est validée : la liste doit toujours refléter l'état réel (suppression, statut, filtre…)
+            foreach (var t in All.Where(x => x.IsEditing).ToList()) t.EndEdit(true);
+            // thématiques orphelines : catégorie de repli, créée avant l'énumération (jamais pendant)
+            TaskVm fallback = All.FirstOrDefault(x => x.Kind == 0);
+            if (fallback == null && All.Any(x => x.Kind == 1)) { fallback = NewItem(0, null, "Général"); fallback.M.Color = 1; }
             var byId = new Dictionary<string, TaskVm>();
             foreach (var t in All) { byId[t.Id] = t; t.Children.Clear(); t.Parent = null; }
-            TaskVm fallback = null;
             foreach (var t in All)
             {
                 if (t.Kind == 0) { t.M.ParentId = null; continue; }
                 TaskVm p;
                 if (t.M.ParentId != null && byId.TryGetValue(t.M.ParentId, out p) && p.Kind == t.Kind - 1) { t.Parent = p; p.Children.Add(t); }
-                else if (t.Kind == 1)
-                {
-                    if (fallback == null) fallback = All.FirstOrDefault(x => x.Kind == 0);
-                    if (fallback == null) { fallback = NewItem(0, null, "Général"); fallback.M.Color = 1; byId[fallback.Id] = fallback; }
-                    t.M.ParentId = fallback.Id; t.Parent = fallback; fallback.Children.Add(t);
-                }
+                else if (t.Kind == 1 && fallback != null) { t.M.ParentId = fallback.Id; t.Parent = fallback; fallback.Children.Add(t); }
             }
             foreach (var t in All) t.Children = Sorted(t.Children);
             var cats = Sorted(All.Where(t => t.Kind == 0));
@@ -610,6 +607,7 @@ namespace Pupitre
                     Sync(th.ActiveTasks, th.Children.Where(k => !k.IsDone).ToList());
                     Sync(th.DoneTasks, th.Children.Where(k => k.IsDone).OrderByDescending(k => k.M.Completed ?? "").ToList());
                     th.NotifyStructure();
+                    foreach (var k in th.Children) k.NotifyStructure();
                 }
                 cat.NotifyStructure();
                 if (!FilterActive || themes.Count > 0) visible.Add(cat);
@@ -655,6 +653,8 @@ namespace Pupitre
             if (!string.IsNullOrEmpty(serviceId)) vm.M.ServiceId = serviceId;
             cat.M.Collapsed = false;
             saveDeb.Trigger();
+            // invisible sous un filtre ou une recherche qu'elle ne satisfait pas : on les efface pour la montrer
+            if (FilterActive && !Match(vm)) { ServiceFilter.Clear(); Search = ""; var h = FilterReset; if (h != null) h(); }
             Rebuild();
             return vm;
         }

@@ -528,7 +528,8 @@ namespace Pupitre
             {
                 var s = Dialogs.Prompt(this, "Échéance", "Date (jj/mm/aaaa, demain, lundi, +3…)", t.Due.HasValue ? t.Due.Value.ToString("dd/MM/yyyy") : "", false);
                 DateTime d;
-                if (!string.IsNullOrEmpty(s) && QuickParse.TryDate(s, out d)) t.Due = d;
+                if (string.IsNullOrEmpty(s)) return;
+                if (QuickParse.TryDate(s, out d)) t.Due = d; else c.Toast("Date non reconnue : " + s);
             }));
             into.Items.Add(new Separator());
             var none = Item("Aucune échéance", null, delegate { t.Due = null; });
@@ -955,7 +956,7 @@ namespace Pupitre
         void ListDown(object sender, MouseButtonEventArgs e)
         {
             var grip = Ui.HitTag(e.OriginalSource, "grip", "row");
-            if (grip == null && e.ClickCount == 2 && Ui.FindAncestor<ButtonBase>(e.OriginalSource as DependencyObject) == null)
+            if (grip == null && e.ClickCount == 2 && Ui.FindAncestor<ButtonBase>(e.OriginalSource as DependencyObject) == null && Ui.FindAncestor<TextBox>(e.OriginalSource as DependencyObject) == null)
             {
                 // double-clic sur une tâche ou une sous-tâche (hors boutons) : la fiche complète dans une fenêtre
                 var row = Ui.HitTag(e.OriginalSource, "row", "row");
@@ -999,6 +1000,7 @@ namespace Pupitre
             if (dragVm != null) { bool did = dragging; EndDrag(); if (did) { e.Handled = true; return; } return; }
             // clic simple sur l'en-tête d'une catégorie (hors boutons et champs) : replier / déplier
             if (Ui.FindAncestor<ButtonBase>(e.OriginalSource as DependencyObject) != null || Ui.FindAncestor<TextBox>(e.OriginalSource as DependencyObject) != null) return;
+            if (Ui.HitTag(e.OriginalSource, "title", "row") != null) return;   // le titre : double-clic = renommer, jamais de repli
             var head = Ui.HitTag(e.OriginalSource, "cathead", "row");
             if (head == null || e.ClickCount != 1) return;
             var cat = head.DataContext as TaskVm;

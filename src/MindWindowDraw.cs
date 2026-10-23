@@ -506,6 +506,12 @@ namespace Pupitre
         void Render()
         {
             MeasureAll();
+            if (selected != null && !boxes.ContainsKey(selected))
+            {   // sélection masquée (repli, annulation) : premier ancêtre visible
+                var a = ParentOf(selected) ?? RealParentOf(selected);
+                while (a != null && !boxes.ContainsKey(a)) a = ParentOf(a) ?? RealParentOf(a);
+                selected = a ?? RootNode;
+            }
             PlaceAll();
             Draw(canvas, true);
             canvasBg.Background = LightTheme ? Theme.Brush(0xFF, Color.FromRgb(0xF6, 0xF7, 0xF9)) : Brushes.Transparent;
@@ -730,7 +736,7 @@ namespace Pupitre
             var wrap = new Border { Tag = "node", DataContext = n, Background = Brushes.Transparent, Width = b.W, Height = b.H, Cursor = interactive ? Cursors.Hand : Cursors.Arrow };
             if (!string.IsNullOrWhiteSpace(n.Note) && string.IsNullOrWhiteSpace(n.Link)) wrap.ToolTip = n.Note;
             if (interactive && editing == n) { editOuter = outer; editWrap = wrap; editBox = b; }
-            if (interactive && dragging && n == dragNode) wrap.Opacity = 0.45;
+            if (interactive && dragging && n == dragNode) { wrap.Opacity = 0.45; wrap.IsHitTestVisible = false; }
             if (interactive && !sel && !hit && editing != n)
             {
                 // survol : contour discret, comme dans MindNode ou Whimsical
@@ -921,7 +927,7 @@ namespace Pupitre
             SaveView();
         }
 
-        void SaveView() { map.Zoom = scale.ScaleX; map.PanX = pan.X; map.PanY = pan.Y; UpdateFooter(); saveDeb.Trigger(); PlaceToolbar(); }
+        void SaveView() { if (focus == null) { map.Zoom = scale.ScaleX; map.PanX = pan.X; map.PanY = pan.Y; saveDeb.Trigger(); } UpdateFooter(); PlaceToolbar(); }
 
         /// <summary>Décale la vue au minimum pour que le sujet soit entièrement visible.</summary>
         void EnsureVisible(MindNode n)

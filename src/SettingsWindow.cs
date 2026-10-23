@@ -23,6 +23,7 @@ namespace Pupitre
             c = ctl;
             d = new Settings();
             Copy(c.S, d);
+            Activated += delegate { SyncLive(); };
 
             Section("Général");
             var g1 = new UniformGrid { Columns = 2 };
@@ -137,7 +138,7 @@ namespace Pupitre
                 del.Click += delegate { if (Dialogs.Confirm(this, "Supprimer la disposition", "« " + p.Name + " » sera oubliée.", "Supprimer", true)) { c.DeleteProfile(p); RefreshProfiles(); } };
                 DockPanel.SetDock(del, Dock.Right);
                 var restore = new Button { Style = Theme.Res<Style>("SBtnAccent"), Content = "Restaurer", Padding = new Thickness(10, 3, 10, 4), Margin = new Thickness(6, 0, 0, 0) };
-                restore.Click += delegate { c.ApplyProfile(p); };
+                restore.Click += delegate { c.ApplyProfile(p); SyncLive(); };
                 DockPanel.SetDock(restore, Dock.Right);
                 DateTime d;
                 string when = DateTime.TryParse(p.Updated, null, System.Globalization.DateTimeStyles.RoundtripKind, out d) ? d.ToString("dd/MM HH:mm") : "";
@@ -208,15 +209,21 @@ namespace Pupitre
 
         protected override bool Validate()
         {
-            d.StartWithWindows = cbStart.IsChecked == true; d.Snap = cbSnap.IsChecked == true;
-            d.HideDesktopIcons = cbHide.IsChecked == true; d.ShowExtensions = cbExt.IsChecked == true; d.AutoSort = cbAuto.IsChecked == true; d.LockLayout = cbLock.IsChecked == true;
-            d.TasksVisible = cbTasks.IsChecked == true; d.NotesVisible = cbNotes.IsChecked == true; d.MindVisible = cbMind.IsChecked == true; d.DailyReminder = cbRemind.IsChecked == true;
-            for (int i = 0; i < iconSize.Length; i++) if (iconSize[i].IsChecked == true) d.IconSize = i;
-            Copy(d, c.S);
-            if (!c.ApplySettings()) { Show("Un raccourci est indisponible (déjà utilisé par une autre application)."); return false; }
+            // seuls les réglages de cette fenêtre sont écrits : ce qui a changé entre-temps ailleurs (volet Style des cartes,
+            // zone de notification, bouton « Restaurer » d'une disposition) est conservé
+            var s = c.S;
+            s.StartWithWindows = cbStart.IsChecked == true; s.Snap = cbSnap.IsChecked == true;
+            s.HideDesktopIcons = cbHide.IsChecked == true; s.ShowExtensions = cbExt.IsChecked == true; s.AutoSort = cbAuto.IsChecked == true; s.LockLayout = cbLock.IsChecked == true;
+            s.TasksVisible = cbTasks.IsChecked == true; s.NotesVisible = cbNotes.IsChecked == true; s.MindVisible = cbMind.IsChecked == true; s.DailyReminder = cbRemind.IsChecked == true;
+            for (int i = 0; i < iconSize.Length; i++) if (iconSize[i].IsChecked == true) s.IconSize = i;
+            if (!c.ApplySettings()) c.Toast("Un raccourci clavier est indisponible (déjà utilisé par une autre application) ; les autres réglages sont enregistrés.");
             return true;
         }
 
-        void Show(string msg) { status.Text = msg; status.Visibility = Visibility.Visible; }
+        /// <summary>Cases qui reflètent un état modifiable ailleurs (zone de notification, « Restaurer ») : relues depuis les réglages.</summary>
+        void SyncLive()
+        {
+            cbTasks.IsChecked = c.S.TasksVisible; cbNotes.IsChecked = c.S.NotesVisible; cbMind.IsChecked = c.S.MindVisible; cbLock.IsChecked = c.S.LockLayout;
+        }
     }
 }
