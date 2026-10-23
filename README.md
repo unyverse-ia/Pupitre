@@ -3,7 +3,19 @@
 Pupitre pose sur le bureau des **cadres** en verre dépoli qui regroupent fichiers et raccourcis
 (comme Fences), un **panneau Tâches** façon liste de projets (projets → sous-tâches, service,
 priorité, échéance) et un **panneau Notes** (bibliothèque de notes réordonnables). Un seul fichier,
-`dist\Pupitre.exe`, **100 % hors ligne**, sans droits administrateur.
+`Pupitre.exe`, **100 % hors ligne**, sans droits administrateur.
+
+## Installation
+
+1. Récupérez le dossier (bouton **Code → Download ZIP** sur GitHub, puis décompressez) ou seulement `Pupitre.exe` et
+   `mettre-a-jour.cmd` (liens directs : https://github.com/unyverse-ia/Pupitre/raw/main/Pupitre.exe et
+   https://github.com/unyverse-ia/Pupitre/raw/main/mettre-a-jour.cmd).
+2. Placez `Pupitre.exe` (et `mettre-a-jour.cmd` à côté) où vous voulez, par exemple `Documents\Pupitre`. Rien d'autre
+   n'est nécessaire : pas d'installation, pas de droits administrateur. Vos données seront dans `%APPDATA%\Pupitre`,
+   jamais dans ce dossier.
+3. Double-cliquez sur `Pupitre.exe`. Au premier lancement d'un fichier téléchargé, Windows peut afficher SmartScreen :
+   « Informations complémentaires » → « Exécuter quand même ».
+4. Pour les mises à jour suivantes : double-clic sur `mettre-a-jour.cmd` (section « Mise à jour »).
 
 ## Les cadres
 
@@ -111,17 +123,17 @@ se masque depuis les paramètres ou la zone de notification.
 ## Compilation
 
 Aucun outil à installer : `build.cmd` utilise le compilateur C# fourni avec le .NET Framework 4.8
-(inclus dans Windows 10/11) et produit `dist\Pupitre.exe`. `build.cmd icon` régénère l'icône
+(inclus dans Windows 10/11) et produit `Pupitre.exe` à la racine du dossier. `build.cmd icon` régénère l'icône
 depuis `assets\pupitre-icone.png` (source PNG du logo).
 
 **Smart App Control** : si cette protection de Windows 11 est activée, elle peut refuser de lancer
 un exécutable fraîchement compilé (« Une stratégie de contrôle d'application a bloqué ce fichier »).
 Le verdict dépend de l'empreinte du fichier : relancer `build.cmd` produit un nouveau fichier,
-généralement accepté. L'exécutable livré dans `dist\` a été vérifié sur ce PC.
+généralement accepté. L'exécutable livré à la racine du dépôt a été vérifié sur ce PC.
 
 ## Signature de l'exécutable
 
-`dist\Pupitre.exe` n'est pas signé. Pour le diffuser à des collègues sans avertissement SmartScreen, et pour
+`Pupitre.exe` n'est pas signé. Pour le diffuser à des collègues sans avertissement SmartScreen, et pour
 que Smart App Control l'accepte, il faut le signer avec un **certificat de signature de code délivré par une
 autorité reconnue** (certificat OV ou EV, payant, à acheter auprès d'une autorité comme DigiCert, Sectigo ou
 GlobalSign ; l'EV donne la réputation SmartScreen immédiatement). Une fois le certificat installé dans le
@@ -135,7 +147,7 @@ Le script utilise `Set-AuthenticodeSignature` de PowerShell (aucun outil à inst
 la signature reste valable après l'expiration du certificat. Variante : `-Pfx fichier.pfx -PfxPassword …`.
 
 Pour un usage **interne sans achat**, `.\sign.ps1 -MakeTestCert` crée un certificat auto-signé et exporte
-`dist\Pupitre-test.cer`, à importer sur chaque poste dans « Autorités de certification racines de confiance »
+`Pupitre-test.cer`, à importer sur chaque poste dans « Autorités de certification racines de confiance »
 et « Éditeurs approuvés » (`certutil -addstore Root` et `certutil -addstore TrustedPublisher`, ou stratégie de
 groupe). Cela supprime l'« éditeur inconnu » sur ces postes, mais ni SmartScreen ni Smart App Control ne
 considèrent un certificat auto-signé comme de confiance : seul un certificat d'autorité reconnue le permet.
@@ -146,11 +158,11 @@ Les données vivent dans `%APPDATA%\Pupitre` (section suivante), jamais à côt�
 ne touche ni tâches, ni notes, ni cartes, ni disposition. Les fichiers d'une version antérieure sont lus tels quels
 (migrations automatiques ; les anciens champs restent écrits, un retour en arrière reste possible).
 
-- Automatique : `dist\mettre-a-jour.cmd` (double-clic, à côté de `Pupitre.exe`) copie d'abord les données dans
-  `%APPDATA%\Pupitre\sauvegardes\<date_heure>`, télécharge la dernière version depuis GitHub, ferme proprement Pupitre
-  (`Pupitre.exe --quitter`, qui enregistre tout), remplace l'exécutable (l'ancien reste en `Pupitre.precedent.exe`) et le relance.
-  Si la version installée est antérieure à cette commande de fermeture, le script demande de quitter Pupitre à la main
-  (zone de notification → Quitter), puis continue.
+- Automatique : `mettre-a-jour.cmd` (double-clic, à côté de `Pupitre.exe`) copie d'abord les données dans
+  `%APPDATA%\Pupitre\sauvegardes\<date_heure>`, télécharge la dernière version depuis GitHub, ferme Pupitre
+  (`Pupitre.exe --quitter`, qui enregistre tout), remplace l'exécutable et le relance. Pupitre peut rester ouvert pendant
+  la mise à jour, sauf si la version installée est antérieure à cette commande de fermeture : le script demande alors de
+  le quitter à la main (icône de la zone de notification → Quitter), puis continue.
 - À la main : quitter Pupitre (icône de la zone de notification → Quitter), remplacer `Pupitre.exe` par celui du dépôt, relancer.
   Un fichier téléchargé peut déclencher l'avertissement SmartScreen (« Informations complémentaires » → « Exécuter quand même »).
 
@@ -188,7 +200,7 @@ dossier.
 Quand « Masquer les icônes du bureau » est coché, Pupitre les masque à son lancement et les réaffiche quand il
 se ferme, quand Windows ferme la session ou s'il plante. Si malgré tout le bureau est vide alors que Pupitre ne
 tourne pas (processus tué, coupure de courant) : clic droit sur le bureau → **Affichage** → **Afficher les éléments
-du bureau**, ou double-clic sur `dist\restaurer-icones.cmd`. Relancer Pupitre les masque de nouveau et affiche le
+du bureau**, ou double-clic sur `tools\restaurer-icones.cmd`. Relancer Pupitre les masque de nouveau et affiche le
 cadre « Bureau » à la place.
 
 ## Démarrage avec Windows et Smart App Control
@@ -196,7 +208,7 @@ cadre « Bureau » à la place.
 « Lancer avec Windows » inscrit Pupitre dans la clé `Run` de votre profil. Sur un PC où **Smart App Control** est
 actif, un exécutable non signé peut être bloqué sans message à l'ouverture de session (le journal
 *Microsoft-Windows-CodeIntegrity/Operational* enregistre alors un événement 3077). Si Pupitre n'apparaît pas au
-démarrage, ouvrez-le à la main depuis `dist\` ; si Windows le refuse, recompilez (`build.cmd`) ou signez-le
+démarrage, ouvrez-le à la main (`Pupitre.exe` à la racine du dossier) ; si Windows le refuse, recompilez (`build.cmd`) ou signez-le
 (voir plus haut). Signer l'exécutable est la seule solution durable sur ces postes.
 
 ## Limites connues

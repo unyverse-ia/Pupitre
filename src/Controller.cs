@@ -120,6 +120,7 @@ namespace Pupitre
             if (L.MindPanel == null) L.MindPanel = new PanelInfo { Color = 5 };
             var store = Json.Load<TaskStore>(TasksPath);
             S.StartWithWindows = Startup.IsEnabled();
+            if (S.StartWithWindows) Startup.Set(true);   // le chemin enregistré suit l'exécutable s'il a été déplacé
             Tasks = new TasksVm(this, store);
             Tasks.CountsChanged += OnCounts;
             layoutDeb = new Debouncer(600, delegate { UpdateAutoProfile(); Json.Save(LayoutPath, L); });

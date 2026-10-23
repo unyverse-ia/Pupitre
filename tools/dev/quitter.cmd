@@ -1,2 +1,2 @@
 @echo off
-"%~dp0..\..\dist\Pupitre.exe" --quitter
+"%~dp0..\..\Pupitre.exe" --quitter

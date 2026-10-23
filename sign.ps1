@@ -1,18 +1,18 @@
-﻿# Signature Authenticode de dist\Pupitre.exe, sans outil à installer (Set-AuthenticodeSignature de PowerShell).
+﻿# Signature Authenticode de Pupitre.exe, sans outil à installer (Set-AuthenticodeSignature de PowerShell).
 #
 #   .\sign.ps1 -Thumbprint <empreinte>            certificat de signature de code du magasin personnel (Cert:\CurrentUser\My)
 #   .\sign.ps1 -Pfx chemin.pfx [-PfxPassword ...]  certificat fourni en fichier PFX
-#   .\sign.ps1 -MakeTestCert                       crée un certificat auto-signé « Pupitre (test interne) » et exporte dist\Pupitre-test.cer
+#   .\sign.ps1 -MakeTestCert                       crée un certificat auto-signé « Pupitre (test interne) » et exporte Pupitre-test.cer
 #   -NoTimestamp : pas d'horodatage (sinon http://timestamp.digicert.com, nécessite une connexion au moment de la signature)
 #
-# Un certificat auto-signé n'est reconnu que sur les postes où dist\Pupitre-test.cer a été importé dans
+# Un certificat auto-signé n'est reconnu que sur les postes où Pupitre-test.cer a été importé dans
 # « Autorités de certification racines de confiance » et « Éditeurs approuvés » (certutil ou stratégie de groupe).
 # Smart App Control et SmartScreen n'acceptent sans avertissement qu'un certificat délivré par une autorité reconnue.
 param(
     [string]$Thumbprint = $env:PUPITRE_SIGN_THUMBPRINT,
     [string]$Pfx,
     [string]$PfxPassword,
-    [string]$File = (Join-Path $PSScriptRoot "dist\Pupitre.exe"),
+    [string]$File = (Join-Path $PSScriptRoot "Pupitre.exe"),
     [switch]$NoTimestamp,
     [switch]$MakeTestCert
 )
@@ -20,7 +20,7 @@ $ErrorActionPreference = "Stop"
 
 if ($MakeTestCert) {
     $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject "CN=Pupitre (test interne)" -CertStoreLocation Cert:\CurrentUser\My -NotAfter (Get-Date).AddYears(3) -KeyExportPolicy Exportable
-    $cer = Join-Path $PSScriptRoot "dist\Pupitre-test.cer"
+    $cer = Join-Path $PSScriptRoot "Pupitre-test.cer"
     Export-Certificate -Cert $cert -FilePath $cer | Out-Null
     "Certificat de test créé. Empreinte : " + $cert.Thumbprint
     "Certificat public exporté : " + $cer

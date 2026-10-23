@@ -6,7 +6,6 @@ set "CSC=%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
 set "WPF=%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\WPF"
 if not exist "%CSC%" set "CSC=%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe"
 if not exist "%CSC%" set "WPF=%WINDIR%\Microsoft.NET\Framework\v4.0.30319\WPF"
-if not exist dist mkdir dist
 if not exist assets mkdir assets
 
 echo [1/3] Icone...
@@ -19,15 +18,13 @@ echo        assets\pupitre.ico (passer "icon" en argument pour la regenerer)
 echo [2/3] Compilation de Pupitre.exe...
 set "RES="
 if exist assets\templates\*.png for %%f in (assets\templates\*.png) do call set "RES=%%RES%% /resource:assets\templates\%%~nxf,templates.%%~nxf"
-"%CSC%" /nologo /target:winexe /optimize+ /codepage:65001 /platform:anycpu /out:dist\Pupitre.exe %RES% ^
+"%CSC%" /nologo /target:winexe /optimize+ /codepage:65001 /platform:anycpu /out:Pupitre.exe %RES% ^
   /win32manifest:app.manifest /win32icon:assets\pupitre.ico ^
   /r:"%WPF%\PresentationCore.dll" /r:"%WPF%\PresentationFramework.dll" /r:"%WPF%\WindowsBase.dll" ^
   /r:System.Xaml.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll /r:System.Core.dll /r:System.Runtime.Serialization.dll ^
   src\*.cs || goto :err
 
-copy /y tools\restaurer-icones.cmd dist\ >nul
-
-echo [3/3] OK : dist\Pupitre.exe
+echo [3/3] OK : Pupitre.exe (racine du dossier)
 exit /b 0
 
 :err
