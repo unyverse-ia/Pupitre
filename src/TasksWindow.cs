@@ -109,9 +109,9 @@ namespace Pupitre
               <Button Tag='flag' Style='{DynamicResource IconBtnSmall}' Width='20' Height='20' ToolTip='{Binding FlagTip}'>
                 <Viewbox Width='12' Height='12'><Path Style='{DynamicResource Ico}' Data='{DynamicResource IcoFlag}' Stroke='{Binding FlagBrush}' Fill='{Binding FlagFill}'/></Viewbox>
               </Button>
-              <Button Tag='cm' Style='{DynamicResource IconBtnSmall}' Width='22' Height='20' ToolTip='Commentaires et historique'>
+              <Button Tag='open' Style='{DynamicResource IconBtnSmall}' Width='22' Height='20' ToolTip='Ouvrir la tâche dans une fenêtre (sous-tâches, commentaires, historique)'>
                 <Grid>
-                  <Viewbox Width='13' Height='13'><Path Style='{DynamicResource Ico}' Data='{DynamicResource IcoComment}' Stroke='{Binding CommentBrush}'/></Viewbox>
+                  <Viewbox Width='13' Height='13'><Path Style='{DynamicResource Ico}' Data='{DynamicResource IcoEye}' Stroke='{Binding CommentBrush}'/></Viewbox>
                   <Border CornerRadius='6' Background='{DynamicResource Accent}' MinWidth='12' Height='12' HorizontalAlignment='Right' VerticalAlignment='Top' Margin='0,-5,-6,0' Visibility='{Binding HasComments, Converter={StaticResource B2V}}'>
                     <TextBlock Text='{Binding CommentCount}' FontSize='8.5' FontWeight='Bold' Foreground='White' HorizontalAlignment='Center' VerticalAlignment='Center' Margin='2,0,2,0'/>
                   </Border>
@@ -932,7 +932,7 @@ namespace Pupitre
                 case "addtheme": BeginAddTheme(t); break;
                 case "more": if (t.IsCategory) ShowCategoryMenu(t); else if (t.IsTheme) ShowThemeMenu(t); else ShowTaskMenu(t); break;
                 case "flag": t.Flag = !t.Flag; break;
-                case "cm": ShowComments(t, b); break;
+                case "open": OpenDetail(t); break;
                 case "svc": ShowSingle(t, "svc", b); break;
                 case "status": ShowSingle(t, "status", b); break;
                 case "due": ShowSingle(t, "due", b); break;
