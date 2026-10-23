@@ -100,6 +100,16 @@ namespace Pupitre
         }
         public void HideCancel() { CancelBtn.Visibility = Visibility.Collapsed; }
 
+        /// <summary>Insère un élément fixe (onglets…) juste au-dessus des réglages, hors de la zone défilante.</summary>
+        protected void AddFixedTop(UIElement e)
+        {
+            var host = Panel.Parent as FrameworkElement;                   // le ScrollViewer après MakeScrollable, sinon le StackPanel externe
+            var outer = (host is ScrollViewer ? host.Parent : host) as StackPanel;
+            if (outer == null) { Panel.Children.Insert(0, e); return; }
+            int idx = outer.Children.IndexOf(host is ScrollViewer ? host : (UIElement)Panel);
+            outer.Children.Insert(Math.Max(0, idx), e);
+        }
+
         /// <summary>Place les réglages dans une zone défilante bornée à l'écran : la boîte ne dépasse jamais, les boutons du bas restent visibles.</summary>
         protected void MakeScrollable()
         {
@@ -426,6 +436,19 @@ namespace Pupitre
     }
 
     /// <summary>Réglages d'un cadre existant.</summary>
+    /// <summary>Tableau des colonnes de cadres fusionnés, depuis les paramètres généraux.</summary>
+    public class FusionDialog : DarkDialog
+    {
+        public FusionDialog(Window owner, Controller c) : base(owner, "Fusion des cadres", 460)
+        {
+            Note("Chaque colonne commence par sa fenêtre principale ; les fenêtres empilées dessous sont collées sous elle, à sa largeur, déplacées avec elle, et chacune se replie sur son titre. Glissez une fenêtre sur une colonne, sur une ligne ou dans la zone « indépendante ». Les changements s'appliquent immédiatement.");
+            Panel.Children.Add(new FusionBoard(c, null) { Margin = new Thickness(0, 8, 0, 0) });
+            OkBtn.Content = "Fermer";
+            HideCancel();
+            MakeScrollable();
+        }
+    }
+
     public class CadreSettingsDialog : DarkDialog
     {
         readonly CadreWindow cadre;
@@ -435,10 +458,6 @@ namespace Pupitre
         readonly RadioButton[] sizes = new RadioButton[4];
         readonly RadioButton[] sorts = new RadioButton[3];
         readonly CheckBox hide;
-        readonly RadioButton[] fusion;
-        readonly List<CadreWindow> fusionTargets;
-        public string FusionTarget;     // identifiant du sommet de colonne choisi (null : cadre indépendant)
-        public bool FusionChanged;
         public bool Deleted;
         bool saved;
 
@@ -481,16 +500,6 @@ namespace Pupitre
             foreach (var s in sorts) so.Children.Add(s);
             Panel.Children.Add(so);
 
-            Label("Fusion avec d'autres cadres");
-            fusionTargets = Fusion.Targets(ctl, w);
-            var top = Fusion.IsBelow(ctl, w) ? Fusion.Top(ctl, w) : null;
-            var fp = new WrapPanel();
-            fusion = new RadioButton[fusionTargets.Count + 1];
-            fusion[0] = Chip("Aucune (cadre indépendant)", "fusion", top == null);
-            fp.Children.Add(fusion[0]);
-            for (int i = 0; i < fusionTargets.Count; i++) { fusion[i + 1] = Chip("Sous « " + fusionTargets[i].Info.Name + " »", "fusion", top == fusionTargets[i]); fp.Children.Add(fusion[i + 1]); }
-            Panel.Children.Add(fp);
-            Note("Les cadres fusionnés forment une colonne : même largeur, collés l'un sous l'autre, déplacés ensemble ; chacun se replie sur son titre (double-clic) et se déplie. Les panneaux Tâches, Notes et Cartes mentales restent indépendants.");
 
             if (!info.IsDesktop)
             {
@@ -518,6 +527,25 @@ namespace Pupitre
             }
             OkBtn.Content = "Enregistrer";
             Closed += delegate { if (!saved) look.Revert(); };
+
+            // deux onglets : tout ce qui précède dans « Général », le tableau des colonnes dans « Fusion »
+            var general = new StackPanel();
+            foreach (var child in Panel.Children.Cast<UIElement>().ToList()) { Panel.Children.Remove(child); general.Children.Add(child); }
+            var fusionTab = new StackPanel { Visibility = Visibility.Collapsed };
+            fusionTab.Children.Add(new TextBlock { Text = "Colonnes de cadres", FontWeight = FontWeights.SemiBold, FontSize = 13, Margin = new Thickness(0, 10, 0, 2) });
+            fusionTab.Children.Add(new TextBlock { Text = "Chaque colonne commence par sa fenêtre principale ; les fenêtres empilées dessous sont collées sous elle, à sa largeur, déplacées avec elle, et chacune se replie sur son titre (double-clic). Glissez une fenêtre sur une colonne (collée en bas), sur une ligne (insérée à cette place) ou dans la zone « indépendante ». Les changements s'appliquent immédiatement.", FontSize = 11.5, Foreground = Theme.Res<Brush>("SMuted"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 8) });
+            fusionTab.Children.Add(new FusionBoard(ctl, w));
+            fusionTab.Children.Add(new TextBlock { Text = "Tâches, Notes et Cartes mentales restent indépendants.", FontSize = 11.5, Foreground = Theme.Res<Brush>("SMuted"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0) });
+            Panel.Children.Add(general);
+            Panel.Children.Add(fusionTab);
+            var tabs = new WrapPanel { Margin = new Thickness(0, 0, 0, 4) };
+            var tGeneral = Chip("Général", "cadretab", true);
+            var tFusion = Chip("Fusion", "cadretab", false);
+            tGeneral.Checked += delegate { general.Visibility = Visibility.Visible; fusionTab.Visibility = Visibility.Collapsed; };
+            tFusion.Checked += delegate { general.Visibility = Visibility.Collapsed; fusionTab.Visibility = Visibility.Visible; };
+            tabs.Children.Add(tGeneral); tabs.Children.Add(tFusion);
+            MakeScrollable();
+            AddFixedTop(tabs);
         }
 
         protected override bool Validate()
@@ -529,11 +557,6 @@ namespace Pupitre
             info.Color = look.Color; info.CustomColor = look.Custom; info.Opacity = look.Opacity; info.Locked = look.Locked;
             info.IconSize = sizes[0].IsChecked == true ? -1 : (sizes[1].IsChecked == true ? 0 : (sizes[2].IsChecked == true ? 1 : 2));
             info.Sort = sorts[1].IsChecked == true ? "type" : (sorts[2].IsChecked == true ? "date" : "name");
-            var curTop = Fusion.IsBelow(c, cadre) ? Fusion.Top(c, cadre) : null;
-            CadreWindow chosen = null;
-            for (int i = 0; i < fusionTargets.Count; i++) if (fusion[i + 1].IsChecked == true) chosen = fusionTargets[i];
-            FusionTarget = chosen != null ? chosen.Info.Id : null;
-            FusionChanged = chosen != curTop;
             if (!info.IsDesktop)
             {
                 string f = App.Norm(folderBox.Text.Trim());

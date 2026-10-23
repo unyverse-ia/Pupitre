@@ -539,7 +539,6 @@ namespace Pupitre
             bool ok = dlg.ShowDialog() == true;
             if (dlg.Deleted) { DeleteCadre(w); return; }
             if (!ok) return;
-            if (dlg.FusionChanged) Fusion.Attach(this, w, Fusion.ById(this, dlg.FusionTarget));
             w.ApplyInfo();
             w.ApplyLock();
             w.SetupWatchers();

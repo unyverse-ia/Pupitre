@@ -73,7 +73,11 @@ namespace Pupitre
             RefreshCadres();
             var add = new Button { Style = Theme.Res<Style>("SBtn"), Content = "Nouveau cadre…", HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 8, 0, 0) };
             add.Click += delegate { c.NewCadre(this); RefreshCadres(); };
-            Panel.Children.Add(add);
+            var fusionBtn = new Button { Style = Theme.Res<Style>("SBtn"), Content = "Fusion des cadres…", Margin = new Thickness(8, 8, 0, 0), ToolTip = "Colonnes de cadres collés : organiser par glisser-déposer" };
+            fusionBtn.Click += delegate { new FusionDialog(this, c).ShowDialog(); RefreshCadres(); };
+            var addRow = new WrapPanel();
+            addRow.Children.Add(add); addRow.Children.Add(fusionBtn);
+            Panel.Children.Add(addRow);
 
             Section("Fenêtres : retrouver un cadre ou un panneau");
             Panel.Children.Add(new TextBlock { Text = "Si une fenêtre a été déplacée hors de l'écran ou agrandie à l'excès : « Ramener à l'écran » la replace entièrement dans son écran, « Taille par défaut » lui redonne une taille raisonnable.", Foreground = Theme.Res<Brush>("SMuted"), FontSize = 11, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 4) });

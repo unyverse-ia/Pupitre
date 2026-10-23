@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -84,6 +85,30 @@ namespace Pupitre
             w.Info.Under = null;
             w.SetGroupCorners(true, true);
             if (below != null) { if (IsGrouped(c, below)) Sync(c, below); else below.SetGroupCorners(true, true); }
+            c.SaveLayoutSoon();
+        }
+
+        /// <summary>Réécrit la chaîne d'une colonne dans l'ordre donné (le premier devient la fenêtre principale).</summary>
+        static void Relink(List<CadreWindow> members)
+        {
+            for (int i = 0; i < members.Count; i++) members[i].Info.Under = i == 0 ? null : members[i - 1].Info.Id;
+        }
+
+        /// <summary>Place un cadre à un rang donné dans la colonne de « columnTop » (null : cadre indépendant) ; la colonne
+        /// d'origine est refermée derrière lui. Tout s'applique aussitôt sur le bureau.</summary>
+        public static void Place(Controller c, CadreWindow w, CadreWindow columnTop, int index)
+        {
+            var old = Chain(c, w).Where(m => m != w).ToList();
+            var target = columnTop != null ? Chain(c, columnTop).Where(m => m != w).ToList() : null;
+            w.Info.Under = null;
+            Relink(old);
+            if (target != null)
+            {
+                index = Math.Max(0, Math.Min(index, target.Count));
+                target.Insert(index, w);
+                Relink(target);
+            }
+            SyncAll(c);
             c.SaveLayoutSoon();
         }
 
