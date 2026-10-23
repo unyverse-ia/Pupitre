@@ -81,18 +81,28 @@ namespace Pupitre
 
         public Controller(Application application) { app = application; }
 
-        System.Threading.EventWaitHandle settingsSignal;
+        System.Threading.EventWaitHandle settingsSignal, quitSignal;
 
-        /// <summary>Signal « ouvrir les paramètres » envoyé par une seconde instance lancée avec --parametres.</summary>
+        /// <summary>Signaux d'une seconde instance : « ouvrir les paramètres » (--parametres) et « enregistrer et quitter » (--quitter).</summary>
         void ListenSettingsSignal()
         {
-            try { settingsSignal = new System.Threading.EventWaitHandle(false, System.Threading.EventResetMode.AutoReset, "Local\\Pupitre.OpenSettings"); }
+            try
+            {
+                settingsSignal = new System.Threading.EventWaitHandle(false, System.Threading.EventResetMode.AutoReset, "Local\\Pupitre.OpenSettings");
+                quitSignal = new System.Threading.EventWaitHandle(false, System.Threading.EventResetMode.AutoReset, "Local\\Pupitre.Quit");
+            }
             catch (Exception ex) { Log.Error(ex, "signal paramètres"); return; }
             var t = new System.Threading.Thread(delegate()
             {
+                var handles = new System.Threading.WaitHandle[] { settingsSignal, quitSignal };
                 while (!Exiting)
                 {
-                    try { if (settingsSignal.WaitOne(500)) Application.Current.Dispatcher.BeginInvoke(new Action(OpenSettings)); }
+                    try
+                    {
+                        int i = System.Threading.WaitHandle.WaitAny(handles, 500);
+                        if (i == 0) Application.Current.Dispatcher.BeginInvoke(new Action(OpenSettings));
+                        else if (i == 1) Application.Current.Dispatcher.BeginInvoke(new Action(Quit));
+                    }
                     catch { return; }
                 }
             });
@@ -805,7 +815,7 @@ namespace Pupitre
 
         public void Dispose()
         {
-            try { if (settingsSignal != null) { settingsSignal.Close(); settingsSignal = null; } } catch { }
+            try { if (settingsSignal != null) { settingsSignal.Close(); settingsSignal = null; } if (quitSignal != null) { quitSignal.Close(); quitSignal = null; } } catch { }
             if (watchdog != null) watchdog.Stop();
             if (clock != null) clock.Stop();
             if (desktopWatcher != null) { desktopWatcher.EnableRaisingEvents = false; desktopWatcher.Dispose(); desktopWatcher = null; }

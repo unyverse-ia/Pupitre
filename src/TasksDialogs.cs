@@ -16,7 +16,7 @@ namespace Pupitre
         readonly PanelInfo info;
         readonly LookEditor look;
         bool saved;
-        readonly StackPanel svcList = new StackPanel(), catList = new StackPanel();
+        readonly StackPanel svcList = new StackPanel(), stageList = new StackPanel(), catList = new StackPanel();
 
         public TasksSettingsDialog(DesktopWindow owner, Controller ctl, TasksVm model, PanelInfo p) : base(owner, "Paramètres du panneau Tâches", 470)
         {
@@ -28,6 +28,11 @@ namespace Pupitre
             Panel.Children.Add(svcList);
             Panel.Children.Add(AddRow("Nouveau service…", delegate(string name) { if (vm.AddService(name) != null) RefreshServices(); }));
 
+            Section("Étapes");
+            Note("Étapes d'une tâche, dans l'ordre : la première est l'état initial, la dernière vaut « terminé » (barré, archivable). Ajoutez des étapes intermédiaires (En attente, En revue…), renommez-les, réordonnez-les ; supprimer une étape renvoie ses tâches à la précédente.");
+            Panel.Children.Add(stageList);
+            Panel.Children.Add(AddRow("Nouvelle étape…", delegate(string name) { if (vm.AddStage(name) != null) RefreshStages(); }));
+
             Section("Catégories");
             Note("Les catégories regroupent les tâches. Supprimer une catégorie supprime aussi ses tâches et leurs sous-tâches.");
             Panel.Children.Add(catList);
@@ -38,6 +43,7 @@ namespace Pupitre
             Closed += delegate { if (!saved) look.Revert(); };
             MakeScrollable();
             RefreshServices();
+            RefreshStages();
             RefreshCategories();
         }
 
@@ -71,6 +77,12 @@ namespace Pupitre
         /// <summary>Ligne : pastilles de couleur + palette libre, nom modifiable, usage, suppression.</summary>
         Border Row(string name, int color, string custom, string usage, Action<int, string> setColor, Action<string> rename, Action remove)
         {
+            return Row(name, color, custom, usage, setColor, rename, remove, null, null, false);
+        }
+
+        /// <summary>Ligne avec flèches « monter / descendre » (null = flèche désactivée) ; remove null = pas de suppression.</summary>
+        Border Row(string name, int color, string custom, string usage, Action<int, string> setColor, Action<string> rename, Action remove, Action up, Action down, bool arrows)
+        {
             var dock = new DockPanel();
             var swatches = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) };
             foreach (var i in TaskColors.Indices)
@@ -94,8 +106,16 @@ namespace Pupitre
             swatches.Children.Add(pick);
             DockPanel.SetDock(swatches, Dock.Left);
             var del = Theme.IconButton("IcoTrash", "Supprimer", 13);
-            del.Click += delegate { remove(); };
+            if (remove != null) del.Click += delegate { remove(); }; else del.Visibility = Visibility.Hidden;
             DockPanel.SetDock(del, Dock.Right);
+            if (arrows)
+            {
+                var moves = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 0, 0) };
+                moves.Children.Add(ArrowBtn("▲", "Monter", up));
+                moves.Children.Add(ArrowBtn("▼", "Descendre", down));
+                DockPanel.SetDock(moves, Dock.Right);
+                dock.Children.Add(moves);
+            }
             var use = new TextBlock { Text = usage, Foreground = Theme.Res<Brush>("SMuted"), FontSize = 11, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 6, 0) };
             DockPanel.SetDock(use, Dock.Right);
             var box = new TextBox { Style = Theme.Res<Style>("SFieldBox"), Text = name, FontWeight = FontWeights.SemiBold, Padding = new Thickness(8, 3, 8, 4), MinWidth = 120 };
@@ -106,6 +126,37 @@ namespace Pupitre
             dock.Children.Add(use);
             dock.Children.Add(box);
             return new Border { Child = dock, Padding = new Thickness(8, 5, 4, 5), Margin = new Thickness(0, 5, 0, 0), CornerRadius = new CornerRadius(9), Background = Theme.Res<Brush>("SField"), BorderBrush = Theme.Res<Brush>("SLine"), BorderThickness = new Thickness(1) };
+        }
+
+        Button ArrowBtn(string glyph, string tip, Action act)
+        {
+            var b = new Button { Style = Theme.Res<Style>("IconBtnSmall"), Width = 18, Height = 18, ToolTip = tip, IsEnabled = act != null, Opacity = act != null ? 1 : 0.3,
+                Content = new TextBlock { Text = glyph, FontSize = 9, Foreground = Theme.Res<Brush>("SMuted"), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center } };
+            if (act != null) b.Click += delegate { act(); };
+            return b;
+        }
+
+        void RefreshStages()
+        {
+            stageList.Children.Clear();
+            var stages = vm.StageList;
+            for (int i = 0; i < stages.Count; i++)
+            {
+                var st = stages[i];
+                bool first = i == 0, last = i == stages.Count - 1;
+                int n = vm.StageUsage(st);
+                string role = first ? "état initial" : last ? "terminé" : n + (n > 1 ? " tâches" : " tâche");
+                stageList.Children.Add(Row(st.Name, st.Color, st.CustomColor, role,
+                    delegate(int c0, string hex) { vm.SetStageColor(st, c0, hex); RefreshStages(); },
+                    delegate(string name) { vm.RenameStage(st, name); },
+                    first || last ? (Action)null : delegate
+                    {
+                        if (n == 0 || Dialogs.Confirm(this, "Supprimer l'étape", "« " + st.Name + " » : ses " + n + " tâche(s) reviendront à l'étape précédente.", "Supprimer", true)) { vm.RemoveStage(st); RefreshStages(); }
+                    },
+                    i > 1 && !last ? (Action)delegate { vm.MoveStage(st, -1); RefreshStages(); } : null,
+                    !first && i < stages.Count - 2 ? (Action)delegate { vm.MoveStage(st, 1); RefreshStages(); } : null,
+                    true));
+            }
         }
 
         void RefreshServices()

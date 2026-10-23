@@ -5,3 +5,5 @@ tools/dev/real/
 assets-codex/
 *.corrompu-*
 *.tmp
+dist/Pupitre.precedent.exe
+dist/Pupitre.telecharge.exe

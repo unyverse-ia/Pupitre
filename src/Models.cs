@@ -166,7 +166,17 @@ namespace Pupitre
         [DataMember] public string CustomColor; // #RRGGBB
     }
 
-    /// <summary>Entrée de l'historique d'une thématique : commentaire libre ou événement (« Statut → En cours »).</summary>
+    /// <summary>Étape du suivi d'une thématique. La première de la liste est l'état initial, la dernière vaut « terminé ».</summary>
+    [DataContract]
+    public class StageDef
+    {
+        [DataMember] public string Id;
+        [DataMember] public string Name;
+        [DataMember] public int Color;        // index de palette (1..9), -1 = couleur personnalisée
+        [DataMember] public string CustomColor; // #RRGGBB
+    }
+
+    /// <summary>Entrée de l'historique d'une thématique : commentaire libre ou événement (« Étape → En cours »).</summary>
     [DataContract]
     public class CommentItem
     {
@@ -191,8 +201,9 @@ namespace Pupitre
         [DataMember] public int Priority;     // lu par la migration des fichiers antérieurs
         [DataMember] public bool Flag;        // thématique : priorité importante
         [DataMember] public string Due;       // thématique : yyyy-MM-dd ou null
-        [DataMember] public int Status;       // 0 à faire, 2 terminée (tâche ou thématique)
-        [DataMember] public int Stage;        // thématique : 0 non commencé, 1 en cours (2 = terminé, via Status)
+        [DataMember] public int Status;       // 0 à faire, 2 terminée (tâche ou thématique) ; maintenu pour les versions antérieures
+        [DataMember] public int Stage;        // thématique : 0 initiale, 1 intermédiaire ; maintenu pour les versions antérieures
+        [DataMember] public string StageId;   // thématique : étape courante (TaskStore.Stages)
         [DataMember] public int Color;        // catégorie : index de palette, -1 = couleur personnalisée
         [DataMember] public string CustomColor; // catégorie : #RRGGBB
         [DataMember] public string Created;
@@ -212,10 +223,11 @@ namespace Pupitre
     {
         [DataMember] public int Version;
         [DataMember] public List<ServiceDef> Services;
+        [DataMember] public List<StageDef> Stages;
         [DataMember] public List<TaskItem> Tasks;
         public TaskStore() { Defaults(); }
         [OnDeserializing] void OnDeserializing(StreamingContext c) { Defaults(); }
-        void Defaults() { Tasks = new List<TaskItem>(); Services = new List<ServiceDef>(); }
+        void Defaults() { Tasks = new List<TaskItem>(); Services = new List<ServiceDef>(); Stages = new List<StageDef>(); }
     }
 
     public static class Palette

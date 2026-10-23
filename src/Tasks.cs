@@ -129,15 +129,6 @@ namespace Pupitre
         public static int Next(int count) { return Indices[count % Indices.Length]; }
     }
 
-    /// <summary>Statuts d'une thématique.</summary>
-    public static class Stages
-    {
-        public static readonly string[] Labels = { "Non commencé", "En cours", "Terminé" };
-        public static Color Dot(int s) { return s == 1 ? Color.FromRgb(0x3B, 0x82, 0xF6) : s == 2 ? Color.FromRgb(0x10, 0xB9, 0x81) : Color.FromRgb(0x94, 0xA3, 0xB8); }
-        public static Brush Fg(int s) { return s == 1 ? Theme.Brush(0xFF, Color.FromRgb(0xA5, 0xC8, 0xFF)) : s == 2 ? Theme.Brush(0xFF, Color.FromRgb(0x7F, 0xE7, 0xC0)) : Theme.Res<Brush>("TextMuted"); }
-        public static Brush Bg(int s) { return s == 0 ? Theme.Argb(0x1EFFFFFF) : Theme.Brush(0x3A, Dot(s)); }
-    }
-
     /// <summary>Entrée de l'historique d'une thématique : commentaire modifiable en place, ou événement journalisé (lecture seule).</summary>
     public class CommentVm : INotifyPropertyChanged
     {
@@ -280,22 +271,28 @@ namespace Pupitre
         public string DoneThemesLabel { get { return (M.DoneOpen ? "▾  " : "▸  ") + "Tâches terminées · " + DoneThemes.Count; } }
         public void NotifyLook() { Notify("ColorBrush"); Notify("HeadBg"); Notify("NameBrush"); Notify("SvcName"); Notify("SvcBg"); Notify("SvcFg"); Notify("HasService"); }
 
-        // ---- thématique ----
-        public int Stage { get { return M.Status == 2 ? 2 : (M.Stage == 1 ? 1 : 0); } }
-        public string StLabel { get { return Stages.Labels[Stage]; } }
-        public Brush StDot { get { return Theme.Brush(0xFF, Stages.Dot(Stage)); } }
-        public Brush StBg { get { return Stages.Bg(Stage); } }
-        public Brush StFg { get { return Stages.Fg(Stage); } }
-        /// <summary>Change le statut, journalise l'événement, ouvre la section « terminés » de la catégorie.</summary>
+        // ---- thématique : étape ----
+        public int Stage { get { return owner.StageIndex(M); } }
+        StageDef St { get { return owner.StageAt(Stage); } }
+        public string StLabel { get { return St.Name; } }
+        public Brush StDot { get { return TaskColors.Solid(St.Color, St.CustomColor); } }
+        public Brush StBg { get { return TaskColors.Tint(St.Color, St.CustomColor, 0x3A); } }
+        public Brush StFg { get { return TaskColors.Light(St.Color, St.CustomColor); } }
+        public void NotifyStage() { Notify("Stage"); Notify("StLabel"); Notify("StDot"); Notify("StBg"); Notify("StFg"); }
+        /// <summary>Change l'étape, journalise l'événement ; la dernière étape (terminé) ouvre la section « terminés » de la catégorie.</summary>
         public void SetStage(int s)
         {
+            s = Math.Max(0, Math.Min(owner.LastStage, s));
             if (!IsTheme || Stage == s) return;
-            M.Stage = s == 1 ? 1 : 0;
-            M.Status = s == 2 ? 2 : 0;
-            M.Completed = s == 2 ? DateTime.Now.ToString("s") : null;
-            AddComment("Statut → " + Stages.Labels[s], true);
-            if (s == 2) { IsEditing = false; if (Parent != null) Parent.DoneOpen = true; }
-            Notify("Stage"); Notify("StLabel"); Notify("StDot"); Notify("StBg"); Notify("StFg"); Notify("IsDone"); Notify("Strike"); Notify("RowOpacity"); Notify("DoneAtText"); Notify("GripVisibility"); Notify("DueFg"); Notify("DueBg");
+            bool done = s == owner.LastStage;
+            var def = owner.StageAt(s);
+            M.StageId = def.Id;
+            M.Stage = !done && s > 0 ? 1 : 0;        // champs des versions antérieures, maintenus
+            M.Status = done ? 2 : 0;
+            M.Completed = done ? DateTime.Now.ToString("s") : null;
+            AddComment("Étape → " + def.Name, true);
+            if (done) { IsEditing = false; if (Parent != null) Parent.DoneOpen = true; }
+            NotifyStage(); Notify("IsDone"); Notify("Strike"); Notify("RowOpacity"); Notify("DoneAtText"); Notify("GripVisibility"); Notify("DueFg"); Notify("DueBg");
             owner.Changed(this, true);
         }
         public string ServiceId { get { return M.ServiceId; } }
@@ -430,12 +427,12 @@ namespace Pupitre
             set
             {
                 if (IsDone == value) return;
-                if (IsTheme) { SetStage(value ? 2 : (M.Stage == 1 ? 1 : 0)); return; }
+                if (IsTheme) { SetStage(value ? owner.LastStage : owner.ActiveStage); return; }
                 M.Status = value ? 2 : 0;
                 M.Completed = value ? DateTime.Now.ToString("s") : null;
                 if (value) IsEditing = false;
                 Notify("IsDone"); Notify("Strike"); Notify("RowOpacity"); Notify("DoneAtText"); Notify("GripVisibility");
-                if (value && Parent != null && Parent.IsTheme && Parent.Stage == 0) Parent.SetStage(1);
+                if (value && Parent != null && Parent.IsTheme && Parent.Stage == 0) Parent.SetStage(owner.ActiveStage);
                 owner.Changed(this, true);
             }
         }
@@ -479,7 +476,7 @@ namespace Pupitre
         public TasksVm(Controller ctl, TaskStore s)
         {
             c = ctl; store = s;
-            bool migrated = Migrate() | MigrateV3();
+            bool migrated = Migrate() | MigrateV3() | MigrateV4();
             foreach (var t in store.Tasks)
             {
                 if (string.IsNullOrEmpty(t.Id)) t.Id = Guid.NewGuid().ToString("N");
@@ -723,6 +720,97 @@ namespace Pupitre
             Rebuild();
         }
 
+        // ---- étapes ---------------------------------------------------------------------------------
+
+        public List<StageDef> StageList { get { return store.Stages; } }
+        public int LastStage { get { return store.Stages.Count - 1; } }
+        /// <summary>Étape « en cours » par défaut : la première intermédiaire, ou l'initiale s'il n'y en a pas.</summary>
+        public int ActiveStage { get { return Math.Max(0, Math.Min(1, LastStage - 1)); } }
+        public StageDef StageAt(int i) { return store.Stages[Math.Max(0, Math.Min(LastStage, i))]; }
+
+        /// <summary>Index de l'étape d'une thématique ; sans identifiant (fichier antérieur), déduit de Status et Stage.</summary>
+        public int StageIndex(TaskItem m)
+        {
+            if (!string.IsNullOrEmpty(m.StageId)) { int i = store.Stages.FindIndex(x => x.Id == m.StageId); if (i >= 0) return i; }
+            return m.Status == 2 ? LastStage : (m.Stage == 1 ? ActiveStage : 0);
+        }
+
+        /// <summary>Étapes par défaut (celles des versions antérieures) quand le magasin n'en a pas.</summary>
+        void EnsureStages()
+        {
+            if (store.Stages.Count >= 2) return;
+            store.Stages.Clear();
+            store.Stages.Add(new StageDef { Id = Guid.NewGuid().ToString("N"), Name = "Non commencé", Color = -1, CustomColor = "#94A3B8" });
+            store.Stages.Add(new StageDef { Id = Guid.NewGuid().ToString("N"), Name = "En cours", Color = 1 });
+            store.Stages.Add(new StageDef { Id = Guid.NewGuid().ToString("N"), Name = "Terminé", Color = 2 });
+        }
+
+        /// <summary>Version 4 : liste d'étapes dans le magasin, identifiant d'étape sur chaque thématique.</summary>
+        bool MigrateV4()
+        {
+            bool changed = store.Stages.Count < 2;
+            EnsureStages();
+            foreach (var t in store.Tasks) if (t.Kind == 1 && string.IsNullOrEmpty(t.StageId)) { t.StageId = StageAt(StageIndex(t)).Id; changed = true; }
+            if (store.Version < 4) { store.Version = 4; changed = true; }
+            return changed;
+        }
+
+        /// <summary>Nouvelle étape intermédiaire, insérée juste avant « terminé ».</summary>
+        public StageDef AddStage(string name)
+        {
+            name = (name ?? "").Trim();
+            if (name.Length == 0) return null;
+            var s = new StageDef { Id = Guid.NewGuid().ToString("N"), Name = name, Color = TaskColors.Next(store.Stages.Count) };
+            store.Stages.Insert(LastStage, s);
+            StagesChanged();
+            return s;
+        }
+
+        public void RenameStage(StageDef s, string name)
+        {
+            name = (name ?? "").Trim();
+            if (name.Length == 0 || s.Name == name) return;
+            s.Name = name;
+            StagesChanged();
+        }
+
+        public void SetStageColor(StageDef s, int color, string custom)
+        {
+            s.Color = color;
+            if (custom != null) s.CustomColor = custom;
+            StagesChanged();
+        }
+
+        /// <summary>Déplace une étape intermédiaire d'un cran ; la première et la dernière restent en place.</summary>
+        public void MoveStage(StageDef s, int delta)
+        {
+            int i = store.Stages.IndexOf(s), j = i + delta;
+            if (i <= 0 || i >= LastStage || j <= 0 || j >= LastStage) return;
+            store.Stages.RemoveAt(i);
+            store.Stages.Insert(j, s);
+            StagesChanged();
+        }
+
+        /// <summary>Supprime une étape intermédiaire ; ses thématiques reviennent à l'étape précédente.</summary>
+        public void RemoveStage(StageDef s)
+        {
+            int i = store.Stages.IndexOf(s);
+            if (i <= 0 || i >= LastStage) return;
+            var prev = store.Stages[i - 1];
+            foreach (var t in All) if (t.IsTheme && t.M.StageId == s.Id) { t.M.StageId = prev.Id; t.M.Stage = i - 1 > 0 ? 1 : 0; }
+            store.Stages.RemoveAt(i);
+            StagesChanged();
+        }
+
+        public int StageUsage(StageDef s) { return All.Count(t => t.IsTheme && t.M.StageId == s.Id); }
+
+        void StagesChanged()
+        {
+            foreach (var t in All) if (t.IsTheme) t.NotifyStage();
+            saveDeb.Trigger();
+            Recount();
+        }
+
         // ---- services et catégories -----------------------------------------------------------------
 
         public ServiceDef AddService(string name)
@@ -829,7 +917,7 @@ namespace Pupitre
             var today = DateTime.Today;
             var themes = All.Where(t => t.IsTheme).ToList();
             CountThemesOpen = themes.Count(t => !t.IsDone);
-            CountThemesDoing = themes.Count(t => t.Stage == 1);
+            CountThemesDoing = themes.Count(t => !t.IsDone && t.Stage > 0);
             CountThemesDone = themes.Count(t => t.IsDone);
             CountTasksTotal = All.Count(t => t.IsTask);
             CountTasksDone = All.Count(t => t.IsTask && t.IsDone);

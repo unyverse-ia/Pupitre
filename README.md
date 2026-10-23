@@ -40,6 +40,7 @@ Le panneau Tâches reprend l'organisation d'un suivi de projets : **catégories*
 | Fiche | Double-clic sur une tâche ou une sous-tâche (ou « Ouvrir dans une fenêtre » dans son menu) : fenêtre flottante redimensionnable avec la catégorie, le titre, les badges, les sous-tâches et tout l'historique, pour tout lire et modifier sans agrandir le panneau ni faire défiler. Échap ferme |
 | Terminés | Une tâche « Terminé » rejoint « Tâches terminées · n » en bas de sa catégorie (barrée, date). « Archiver les terminés » les déplace dans `archive.json` |
 | Filtre et recherche | « Tous les services ▾ » : filtre multi-services avec compteurs. Loupe de la barre de titre : recherche dans les titres, sous-tâches et commentaires. Les catégories sans tâche correspondante sont masquées (le pied du panneau en donne le nombre) ; créer une catégorie efface filtre et recherche pour la montrer |
+| Étapes | Paramètres du panneau → Étapes : la première est l'état initial, la dernière vaut « terminé » (barré, archivable). Ajoutez, renommez, colorez et réordonnez les étapes intermédiaires (En attente, En revue…) ; supprimer une étape renvoie ses tâches à la précédente. La pastille de statut d'une tâche propose toutes les étapes |
 | Services et catégories | Paramètres du panneau (engrenage de la barre de titre, ou menu « … »), sous l'apparence : noms, couleurs (huit pastilles ou, par la dernière pastille « palette », n'importe quelle couleur), usage, suppression, ajout. Le menu « … » d'une catégorie propose aussi « Couleur → Personnalisée… » |
 | Ordre | Poignée à gauche d'une catégorie, d'une tâche ou d'une sous-tâche : l'élément se **détache** et suit la souris (carte fantôme), sa place reste marquée en transparence et se décale **en direct** dans la liste ; relâchez pour le rattacher |
 | Capturer une demande | **Ctrl + Alt + N** depuis n'importe quelle application : nouvelle tâche dans la catégorie choisie (avec service), ou sous-tâche dans une tâche existante |
@@ -104,7 +105,7 @@ se masque depuis les paramètres ou la zone de notification.
 - **Ctrl + Alt + B** : afficher / masquer tous les panneaux.
 - Icône de la zone de notification : clic gauche = afficher / masquer, double-clic = nouvelle tâche, clic droit = menu (dont les paramètres).
 - Les combinaisons sont fixes ; pour en changer, modifier `QuickMods`/`QuickVk` et `ToggleMods`/`ToggleVk` dans `settings.json` (Pupitre fermé).
-- `Pupitre.exe --parametres` ouvre directement la fenêtre des paramètres (utile pour un raccourci).
+- `Pupitre.exe --parametres` ouvre directement la fenêtre des paramètres (utile pour un raccourci) ; `Pupitre.exe --quitter` demande à l'instance en cours d'enregistrer et de se fermer (mise à jour).
 
 ## Compilation
 
@@ -137,6 +138,18 @@ Pour un usage **interne sans achat**, `.\sign.ps1 -MakeTestCert` crée un certif
 et « Éditeurs approuvés » (`certutil -addstore Root` et `certutil -addstore TrustedPublisher`, ou stratégie de
 groupe). Cela supprime l'« éditeur inconnu » sur ces postes, mais ni SmartScreen ni Smart App Control ne
 considèrent un certificat auto-signé comme de confiance : seul un certificat d'autorité reconnue le permet.
+
+## Mise à jour
+
+Les données vivent dans `%APPDATA%\Pupitre` (section suivante), jamais à côté de l'exécutable : remplacer `Pupitre.exe`
+ne touche ni tâches, ni notes, ni cartes, ni disposition. Les fichiers d'une version antérieure sont lus tels quels
+(migrations automatiques ; les anciens champs restent écrits, un retour en arrière reste possible).
+
+- Automatique : `dist\mettre-a-jour.cmd` (double-clic, à côté de `Pupitre.exe`) copie d'abord les données dans
+  `%APPDATA%\Pupitre\sauvegardes\<date_heure>`, télécharge la dernière version depuis GitHub, ferme proprement Pupitre
+  (`Pupitre.exe --quitter`, qui enregistre tout), remplace l'exécutable (l'ancien reste en `Pupitre.precedent.exe`) et le relance.
+- À la main : quitter Pupitre (icône de la zone de notification → Quitter), remplacer `Pupitre.exe` par celui du dépôt, relancer.
+  Un fichier téléchargé peut déclencher l'avertissement SmartScreen (« Informations complémentaires » → « Exécuter quand même »).
 
 ## Fichiers créés à l'exécution
 

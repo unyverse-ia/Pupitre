@@ -490,11 +490,12 @@ namespace Pupitre
 
         MenuItem StatusItems(TaskVm t, MenuItem into)
         {
-            for (int s = 0; s < 3; s++)
+            for (int s = 0; s <= vm.LastStage; s++)
             {
                 int v = s;
-                var mi = Check(Stages.Labels[s], t.Stage == s, delegate { t.SetStage(v); });
-                mi.Icon = new Border { Width = 9, Height = 9, CornerRadius = new CornerRadius(5), Background = Theme.Brush(0xFF, Stages.Dot(s)) };
+                var def = vm.StageAt(s);
+                var mi = Check(def.Name, t.Stage == s, delegate { t.SetStage(v); });
+                mi.Icon = new Border { Width = 9, Height = 9, CornerRadius = new CornerRadius(5), Background = TaskColors.Solid(def.Color, def.CustomColor) };
                 into.Items.Add(mi);
             }
             return into;

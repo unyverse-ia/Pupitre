@@ -24,8 +24,12 @@ namespace Pupitre
                     // instance déjà lancée : « --parametres » lui demande d'ouvrir ses paramètres
                     if (Array.Exists(args, x => string.Equals(x, "--parametres", StringComparison.OrdinalIgnoreCase)))
                         try { using (var ev = EventWaitHandle.OpenExisting("Local\\Pupitre.OpenSettings")) ev.Set(); } catch { }
+                    // « --quitter » (mise à jour) : l'instance en cours enregistre tout et se ferme
+                    if (Array.Exists(args, x => string.Equals(x, "--quitter", StringComparison.OrdinalIgnoreCase)))
+                        try { using (var ev = EventWaitHandle.OpenExisting("Local\\Pupitre.Quit")) ev.Set(); } catch { }
                     return 0;
                 }
+                if (Array.Exists(args, x => string.Equals(x, "--quitter", StringComparison.OrdinalIgnoreCase))) return 0;   // rien à fermer
                 var app = new Application();
                 app.ShutdownMode = ShutdownMode.OnExplicitShutdown;
                 app.Resources.MergedDictionaries.Add(Theme.Create());
