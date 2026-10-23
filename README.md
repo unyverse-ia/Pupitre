@@ -60,8 +60,8 @@ corbeille. Hors saisie, le texte est rendu : les adresses web, chemins de fichie
 entre guillemets s'ils contiennent des espaces) sont cliquables, et les lignes commençant par `[ ]` ou `[x]`
 deviennent des cases à cocher. Un clic sur le texte (ou Tab depuis le titre) passe en saisie ; Échap ou un clic
 ailleurs revient au rendu. Le chevron replie la carte sur son seul titre. La poignée à gauche du titre permet de
-glisser une note : elle se détache sous la souris et sa place se décale en direct dans la liste. Un double-clic sur une
-carte ouvre la note en grand dans une fenêtre flottante redimensionnable (titre, couleur, texte complet), pour la lire
+glisser une note : elle se détache sous la souris et sa place se décale en direct dans la liste. L'icône œil de la carte (ou un double-clic sur la
+carte) ouvre la note en grand dans une fenêtre flottante redimensionnable (titre, couleur, texte complet), pour la lire
 ou la rédiger sans agrandir le panneau. Enregistrement automatique. Le panneau se masque depuis les paramètres ou la
 zone de notification.
 

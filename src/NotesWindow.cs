@@ -131,6 +131,9 @@ namespace Pupitre
                           <Viewbox Width='8' Height='13' Opacity='0.4'><Path Style='{DynamicResource Ico}' Data='{DynamicResource IcoGrip}' StrokeThickness='3.4' TextElement.Foreground='{DynamicResource TextMuted}'/></Viewbox>
                         </Border>
                         <StackPanel DockPanel.Dock='Right' Orientation='Horizontal' VerticalAlignment='Center'>
+                          <Button Uid='open' Style='{DynamicResource IconBtnSmall}' ToolTip='Ouvrir la note dans une fenêtre'>
+                            <Viewbox Width='13' Height='13'><Path Style='{DynamicResource Ico}' Data='{DynamicResource IcoEye}'/></Viewbox>
+                          </Button>
                           <Button Uid='color' Style='{DynamicResource IconBtnSmall}' ToolTip='Couleur'>
                             <Border Width='12' Height='12' CornerRadius='6' Background='{Binding StripeBrush}' BorderBrush='#66FFFFFF' BorderThickness='1'/>
                           </Button>
@@ -289,6 +292,7 @@ namespace Pupitre
                     }
                     e.Handled = true;
                     break;
+                case "open": vm.IsTextEditing = false; OpenDetail(vm); e.Handled = true; break;
                 case "color": ShowColorMenu(vm, b); e.Handled = true; break;
             }
         }
