@@ -33,7 +33,8 @@ namespace Pupitre
             cbExt = Opt(g1, "Afficher les extensions", d.ShowExtensions);
             cbAuto = Opt(g1, "Tri automatique (règles des cadres)", d.AutoSort);
             cbLock = Opt(g1, "Verrouiller tous les panneaux", d.LockLayout);
-            cbDock = Opt(g1, "Fusionner un cadre déposé contre un autre", !d.NoAutoDock);
+            cbDock = Opt(g1, "Fusion des cadres au dépôt", !d.NoAutoDock);
+            cbDock.ToolTip = "Un cadre déposé contre le bas (ou le haut) d'un autre s'y colle en colonne";
             Panel.Children.Add(g1);
             Note("« Masquer les icônes du bureau » : le cadre « Bureau » les affiche à la place ; elles reviennent quand " + App.Name + " est fermé.");
             startupNote = Note(Startup.Describe());
