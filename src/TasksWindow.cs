@@ -36,8 +36,8 @@ namespace Pupitre
         readonly TasksVm vm;
         ItemsControl cats;
         TextBox searchBox;
-        TextBlock footer, emptyText, badgeText;
-        Button archiveBtn, filterBtn, addCatBtn, manageBtn;
+        TextBlock footer, emptyText, badgeText, hiddenNote;
+        Button archiveBtn, filterBtn, addCatBtn;
         Border badge, searchRow;
         Debouncer searchDeb;
         // glisser en direct
@@ -88,8 +88,8 @@ namespace Pupitre
           </Border>
           <TextBlock DockPanel.Dock='Right' Text='{Binding DoneAtText}' FontSize='10.5' Foreground='{DynamicResource TextFaint}' VerticalAlignment='Center' Margin='6,0,2,0'/>
           <Grid VerticalAlignment='Center'>
-            <TextBlock Tag='title' Text='{Binding Title}' TextTrimming='CharacterEllipsis' FontSize='12.5' Foreground='{DynamicResource Text}' TextDecorations='{Binding Strike}' Cursor='IBeam' ToolTip='Cliquer pour modifier' Visibility='{Binding NotEditing, Converter={StaticResource B2V}}'/>
-            <TextBox Uid='editor' Style='{DynamicResource GhostTextBox}' Text='{Binding Title, UpdateSourceTrigger=PropertyChanged}' FontSize='12.5' Padding='0' Margin='-2,0,0,0' Visibility='{Binding IsEditing, Converter={StaticResource B2V}}'/>
+            <TextBlock Tag='title' Text='{Binding Title}' TextWrapping='Wrap' FontSize='12.5' Foreground='{DynamicResource Text}' TextDecorations='{Binding Strike}' Cursor='IBeam' ToolTip='Cliquer pour modifier' Visibility='{Binding NotEditing, Converter={StaticResource B2V}}'/>
+            <TextBox Uid='editor' Style='{DynamicResource GhostTextBox}' Text='{Binding Title, UpdateSourceTrigger=PropertyChanged}' FontSize='12.5' TextWrapping='Wrap' Padding='0' Margin='-2,0,0,0' Visibility='{Binding IsEditing, Converter={StaticResource B2V}}'/>
           </Grid>
         </DockPanel>
       </Border>
@@ -122,8 +122,8 @@ namespace Pupitre
               </Button>
             </StackPanel>
             <Grid VerticalAlignment='Center'>
-              <TextBlock Tag='title' Text='{Binding Title}' TextTrimming='CharacterEllipsis' FontSize='13' FontWeight='SemiBold' Foreground='{DynamicResource Text}' TextDecorations='{Binding Strike}' Cursor='IBeam' ToolTip='Cliquer pour modifier' Visibility='{Binding NotEditing, Converter={StaticResource B2V}}'/>
-              <TextBox Uid='editor' Style='{DynamicResource GhostTextBox}' Text='{Binding Title, UpdateSourceTrigger=PropertyChanged}' FontSize='13' FontWeight='SemiBold' Padding='0' Margin='-2,0,0,0' Visibility='{Binding IsEditing, Converter={StaticResource B2V}}'/>
+              <TextBlock Tag='title' Text='{Binding Title}' TextWrapping='Wrap' FontSize='13' FontWeight='SemiBold' Foreground='{DynamicResource Text}' TextDecorations='{Binding Strike}' Cursor='IBeam' ToolTip='Cliquer pour modifier' Visibility='{Binding NotEditing, Converter={StaticResource B2V}}'/>
+              <TextBox Uid='editor' Style='{DynamicResource GhostTextBox}' Text='{Binding Title, UpdateSourceTrigger=PropertyChanged}' FontSize='13' FontWeight='SemiBold' TextWrapping='Wrap' Padding='0' Margin='-2,0,0,0' Visibility='{Binding IsEditing, Converter={StaticResource B2V}}'/>
             </Grid>
           </DockPanel>
           <WrapPanel Margin='20,2,0,0'>
@@ -142,7 +142,7 @@ namespace Pupitre
             </Button>
             <TextBlock Text='{Binding ProgressText}' FontSize='10.5' Foreground='{DynamicResource TextFaint}' VerticalAlignment='Center' Margin='3,0,0,2' Visibility='{Binding ProgressVisible, Converter={StaticResource B2V}}' ToolTip='Tâches réalisées / total'/>
           </WrapPanel>
-          <TextBlock Text='{Binding LastComment}' FontSize='11' FontStyle='Italic' Foreground='{DynamicResource TextFaint}' TextTrimming='CharacterEllipsis' Margin='20,2,0,0' Visibility='{Binding HasComments, Converter={StaticResource B2V}}' ToolTip='{Binding LastComment}'/>
+          <TextBlock Text='{Binding LastComment}' FontSize='11' FontStyle='Italic' Foreground='{DynamicResource TextFaint}' TextWrapping='Wrap' Margin='20,2,0,0' Visibility='{Binding HasComments, Converter={StaticResource B2V}}' ToolTip='{Binding LastComment}'/>
           <StackPanel Margin='18,4,0,0' Visibility='{Binding IsOpen, Converter={StaticResource B2V}}'>
             <ItemsControl Tag='tasks' ItemsSource='{Binding ActiveTasks}' ItemTemplate='{StaticResource TaskTpl}' Focusable='False'/>
             <Button Tag='donetoggle' Style='{DynamicResource LinkBtn}' Content='{Binding DoneTasksLabel}' Visibility='{Binding HasDoneTasks, Converter={StaticResource B2V}}' HorizontalAlignment='Left' FontSize='10.5' Margin='4,1,0,1'/>
@@ -164,14 +164,12 @@ namespace Pupitre
         <TextBlock Text='Catégorie'/>
       </StackPanel>
     </Button>
-    <Button x:Name='Manage' DockPanel.Dock='Right' Style='{DynamicResource IconBtnSmall}' Width='24' Height='24' ToolTip='Services et catégories : noms, couleurs' Margin='4,0,0,0'>
-      <Viewbox Width='14' Height='14'><Path Style='{DynamicResource Ico}' Data='{DynamicResource IcoTag}'/></Viewbox>
-    </Button>
     <Button x:Name='FilterBtn' Style='{DynamicResource ChipBtn}' Content='Tous les services ▾' HorizontalAlignment='Left' ToolTip='Filtrer par service'/>
   </DockPanel>
   <Border x:Name='SearchRow' DockPanel.Dock='Top' Margin='10,0,10,4' Visibility='Collapsed'>
     <TextBox x:Name='SearchBox' Style='{DynamicResource FieldTextBox}' Tag='Rechercher (tâches, sous-tâches, commentaires)…'/>
   </Border>
+  <TextBlock x:Name='HiddenNote' DockPanel.Dock='Bottom' Margin='14,2,14,0' FontSize='11' Foreground='{DynamicResource TextFaint}' TextWrapping='Wrap' Visibility='Collapsed'/>
   <DockPanel DockPanel.Dock='Bottom' Margin='14,4,14,9'>
     <Button x:Name='Archive' DockPanel.Dock='Right' Style='{DynamicResource LinkBtn}' Content='Archiver les terminés' VerticalAlignment='Center'/>
     <TextBlock x:Name='Footer' Foreground='{DynamicResource TextFaint}' FontSize='11' VerticalAlignment='Center' TextTrimming='CharacterEllipsis'/>
@@ -208,8 +206,8 @@ namespace Pupitre
                       </Button>
                       <TextBlock DockPanel.Dock='Right' Text='{Binding CountText}' FontSize='11' Foreground='{DynamicResource TextMuted}' VerticalAlignment='Center' Margin='8,0,4,0' Visibility='{Binding ActualWidth, ElementName=Cats, Converter={StaticResource Narrow}}'/>
                       <Grid VerticalAlignment='Center' Margin='2,0,0,0'>
-                        <TextBlock Tag='title' Text='{Binding Title}' FontWeight='Bold' FontSize='13' Foreground='{Binding NameBrush}' TextTrimming='CharacterEllipsis' ToolTip='Double-clic pour renommer' Visibility='{Binding NotEditing, Converter={StaticResource B2V}}'/>
-                        <TextBox Uid='editor' Style='{DynamicResource GhostTextBox}' Text='{Binding Title, UpdateSourceTrigger=PropertyChanged}' FontSize='13' FontWeight='Bold' Padding='0' Margin='-2,0,0,0' Visibility='{Binding IsEditing, Converter={StaticResource B2V}}'/>
+                        <TextBlock Tag='title' Text='{Binding Title}' FontWeight='Bold' FontSize='13' Foreground='{Binding NameBrush}' TextWrapping='Wrap' ToolTip='Double-clic pour renommer' Visibility='{Binding NotEditing, Converter={StaticResource B2V}}'/>
+                        <TextBox Uid='editor' Style='{DynamicResource GhostTextBox}' Text='{Binding Title, UpdateSourceTrigger=PropertyChanged}' FontSize='13' FontWeight='Bold' TextWrapping='Wrap' Padding='0' Margin='-2,0,0,0' Visibility='{Binding IsEditing, Converter={StaticResource B2V}}'/>
                       </Grid>
                     </DockPanel>
                   </Border>
@@ -294,10 +292,10 @@ namespace Pupitre
             searchRow = (Border)body.FindName("SearchRow");
             footer = (TextBlock)body.FindName("Footer");
             emptyText = (TextBlock)body.FindName("EmptyText");
+            hiddenNote = (TextBlock)body.FindName("HiddenNote");
             archiveBtn = (Button)body.FindName("Archive");
             filterBtn = (Button)body.FindName("FilterBtn");
             addCatBtn = (Button)body.FindName("AddCat");
-            manageBtn = (Button)body.FindName("Manage");
             cats.ItemsSource = vm.Cats;
             Body.Content = body;
 
@@ -306,7 +304,6 @@ namespace Pupitre
             searchBox.KeyDown += delegate(object s, KeyEventArgs e) { if (e.Key == Key.Escape) { ToggleSearch(); e.Handled = true; } };
             filterBtn.Click += delegate { ShowFilterMenu(); };
             addCatBtn.Click += delegate { NewCategory(); };
-            manageBtn.Click += delegate { OpenManage(); };
             archiveBtn.Click += delegate { ArchiveDone(); };
             cats.PreviewMouseLeftButtonDown += ListDown;
             cats.PreviewMouseMove += ListMove;
@@ -318,6 +315,7 @@ namespace Pupitre
             cats.AddHandler(ButtonBase.ClickEvent, new RoutedEventHandler(ListButtonClick));
             vm.Cats.CollectionChanged += delegate { UpdateEmpty(); };
             vm.CountsChanged += UpdateCounts;
+            vm.FilterReset += delegate { if (searchBox.Text.Length > 0) searchBox.Text = ""; UpdateCounts(); };
             var look = c.L.Tasks;
             SetLook(look.Color, look.Opacity, look.CustomColor);
             UpdateCounts();
@@ -343,12 +341,15 @@ namespace Pupitre
             Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(delegate { BeginAddTheme(cat); }));
         }
 
+        /// <summary>Paramètres du panneau : apparence, services et catégories dans une seule boîte.</summary>
         void OpenManage()
         {
-            var dlg = new TasksSettingsDialog(this, c, vm);
-            dlg.ShowDialog();
+            var look = c.L.Tasks;
+            var dlg = new TasksSettingsDialog(this, c, vm, look);
+            bool ok = dlg.ShowDialog() == true;
             vm.Rebuild();
             UpdateCounts();
+            if (ok) { SetLook(look.Color, look.Opacity, look.CustomColor); ApplyLock(); c.SaveLayoutSoon(); }
         }
 
         void ShowFilterMenu()
@@ -370,7 +371,7 @@ namespace Pupitre
             var clear = Item("Tous les services (effacer le filtre)", "IcoClose", delegate { vm.ClearFilter(); UpdateCounts(); });
             clear.IsEnabled = vm.ServiceFilter.Count > 0;
             menu.Items.Add(clear);
-            menu.Items.Add(Item("Gérer les services…", "IcoTag", OpenManage));
+            menu.Items.Add(Item("Services et catégories…", "IcoSettings", OpenManage));
             Open(menu, filterBtn);
         }
 
@@ -378,7 +379,7 @@ namespace Pupitre
         {
             var menu = new ContextMenu();
             menu.Items.Add(Item("Nouvelle catégorie…", "IcoPlus", NewCategory));
-            menu.Items.Add(Item("Services et catégories…", "IcoTag", OpenManage));
+            menu.Items.Add(Item("Paramètres du panneau (apparence, services, catégories)…", "IcoSettings", OpenManage));
             menu.Items.Add(new Separator());
             menu.Items.Add(Item("Copier le suivi (texte)", "IcoCopy", delegate { try { Clipboard.SetText(vm.ExportText()); c.Toast("Suivi copié dans le presse-papiers"); } catch { } }));
             menu.Items.Add(Item("Archiver les tâches terminées", "IcoCheckSquare", ArchiveDone));
@@ -416,6 +417,9 @@ namespace Pupitre
             if (vm.CountOverdue > 0) parts.Add(vm.CountOverdue + " en retard");
             else if (vm.CountToday > 0) parts.Add(vm.CountToday + " aujourd'hui");
             footer.Text = string.Join(" · ", parts.ToArray());
+            int hid = vm.HiddenCategories;
+            hiddenNote.Visibility = hid > 0 && vm.Cats.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            hiddenNote.Text = hid > 1 ? hid + " catégories sans tâche correspondante sont masquées par le filtre." : "1 catégorie sans tâche correspondante est masquée par le filtre.";
             archiveBtn.Visibility = vm.CountThemesDone > 0 ? Visibility.Visible : Visibility.Collapsed;
             archiveBtn.Content = "Archiver les terminés (" + vm.CountThemesDone + ")";
 
@@ -507,7 +511,7 @@ namespace Pupitre
                 into.Items.Add(mi);
             }
             into.Items.Add(new Separator());
-            into.Items.Add(Item("Gérer les services…", "IcoTag", OpenManage));
+            into.Items.Add(Item("Services et catégories…", "IcoSettings", OpenManage));
             return into;
         }
 
@@ -713,7 +717,7 @@ namespace Pupitre
       <Viewbox Width='10' Height='10'><Path Style='{DynamicResource Ico}' Data='{DynamicResource IcoClose}' StrokeThickness='2.4'/></Viewbox>
     </Button>
     <TextBlock DockPanel.Dock='Right' Text='{Binding DoneAtText}' FontSize='10.5' Foreground='{DynamicResource TextFaint}' VerticalAlignment='Center' Margin='6,0,4,0'/>
-    <TextBox Style='{DynamicResource GhostTextBox}' Text='{Binding Title, UpdateSourceTrigger=PropertyChanged}' FontSize='13' Padding='0' VerticalAlignment='Center' TextDecorations='{Binding Strike}' Opacity='{Binding RowOpacity}'/>
+    <TextBox Style='{DynamicResource GhostTextBox}' Text='{Binding Title, UpdateSourceTrigger=PropertyChanged}' FontSize='13' TextWrapping='Wrap' Padding='0' VerticalAlignment='Center' TextDecorations='{Binding Strike}' Opacity='{Binding RowOpacity}'/>
   </DockPanel>
 </DataTemplate>";
 
@@ -1083,9 +1087,9 @@ namespace Pupitre
         // ---- panneau --------------------------------------------------------------------------------------
 
         protected override bool CanRename { get { return false; } }
-        protected override string SettingsTooltip { get { return "Paramètres du panneau (couleur, opacité, verrou)"; } }
+        protected override string SettingsTooltip { get { return "Paramètres du panneau (apparence, services, catégories)"; } }
         protected override Size DefaultSize { get { return new Size(380, 560); } }
-        protected override void OnOpenSettings() { c.EditPanel(this, c.L.Tasks, "Tâches"); }
+        protected override void OnOpenSettings() { OpenManage(); }
         protected override bool OwnLocked { get { return c.L.Tasks.Locked; } }
 
         protected override void SaveRect()

@@ -7,16 +7,22 @@ using System.Windows.Media;
 
 namespace Pupitre
 {
-    /// <summary>Services (badges) et catégories du suivi : nom, couleur, suppression. Les changements s'appliquent immédiatement.</summary>
+    /// <summary>Paramètres du panneau Tâches : apparence (couleur, opacité, verrou, taille) appliquée à « Enregistrer »,
+    /// services (badges) et catégories du suivi, dont les changements s'appliquent immédiatement.</summary>
     public class TasksSettingsDialog : DarkDialog
     {
         readonly Controller c;
         readonly TasksVm vm;
+        readonly PanelInfo info;
+        readonly LookEditor look;
+        bool saved;
         readonly StackPanel svcList = new StackPanel(), catList = new StackPanel();
 
-        public TasksSettingsDialog(Window owner, Controller ctl, TasksVm model) : base(owner, "Services et catégories", 470)
+        public TasksSettingsDialog(DesktopWindow owner, Controller ctl, TasksVm model, PanelInfo p) : base(owner, "Paramètres du panneau Tâches", 470)
         {
-            c = ctl; vm = model;
+            c = ctl; vm = model; info = p;
+            Section("Apparence");
+            look = new LookEditor(Panel, owner, p.Color, p.CustomColor, p.Opacity, p.Locked);
             Section("Services");
             Note("Un service par tâche, affiché en badge coloré et utilisé comme filtre. Cliquez sur une pastille pour changer la couleur, modifiez le nom directement dans le champ.");
             Panel.Children.Add(svcList);
@@ -27,10 +33,19 @@ namespace Pupitre
             Panel.Children.Add(catList);
             Panel.Children.Add(AddRow("Nouvelle catégorie…", delegate(string name) { vm.AddCategory(name); RefreshCategories(); }));
 
-            OkBtn.Content = "Fermer";
-            HideCancel();
+            Note("Services et catégories s'appliquent immédiatement ; l'apparence est appliquée par « Enregistrer ».");
+            OkBtn.Content = "Enregistrer";
+            Closed += delegate { if (!saved) look.Revert(); };
+            MakeScrollable();
             RefreshServices();
             RefreshCategories();
+        }
+
+        protected override bool Validate()
+        {
+            info.Color = look.Color; info.CustomColor = look.Custom; info.Opacity = look.Opacity; info.Locked = look.Locked;
+            saved = true;
+            return true;
         }
 
         void Section(string title)

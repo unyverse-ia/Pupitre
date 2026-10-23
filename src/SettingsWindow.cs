@@ -52,7 +52,7 @@ namespace Pupitre
             Section("Tâches");
             cbRemind = Check("Rappel quotidien des tâches du jour", d.DailyReminder);
             Note("Raccourcis : " + Native.HotkeyText(d.QuickMods, d.QuickVk) + " saisie rapide depuis n'importe où · " + Native.HotkeyText(d.ToggleMods, d.ToggleVk) + " afficher / masquer les panneaux.");
-            Note("Services (badges colorés) et catégories : bouton « étiquette » dans la barre d'outils du panneau Tâches.");
+            Note("Services (badges colorés) et catégories : paramètres du panneau Tâches (icône engrenage de sa barre de titre, ou menu « … »).");
             Section("Dispositions par configuration d'écrans");
             Note("Chaque configuration d'écrans (bureau à trois écrans, portable seul…) mémorise sa propre disposition, appliquée automatiquement quand les écrans changent. Vous pouvez aussi enregistrer des instantanés nommés et les restaurer à tout moment.");
             profileList = new StackPanel();
@@ -101,15 +101,7 @@ namespace Pupitre
             CancelBtn.Content = "Fermer";
             Closed += delegate { c.SettingsClosed(); };
 
-            // défilement : les réglages ne doivent jamais dépasser l'écran, les boutons du bas restent visibles
-            var outer = Panel.Parent as StackPanel;
-            if (outer != null)
-            {
-                int idx = outer.Children.IndexOf(Panel);
-                outer.Children.RemoveAt(idx);
-                var sv = new ScrollViewer { Content = Panel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Focusable = false, Padding = new Thickness(0, 0, 8, 0), MaxHeight = Math.Max(320, SystemParameters.WorkArea.Height - 220) };
-                outer.Children.Insert(idx, sv);
-            }
+            MakeScrollable();
         }
 
         void Section(string title)

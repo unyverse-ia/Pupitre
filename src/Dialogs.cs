@@ -99,6 +99,18 @@ namespace Pupitre
         }
         public void HideCancel() { CancelBtn.Visibility = Visibility.Collapsed; }
 
+        /// <summary>Place les réglages dans une zone défilante bornée à l'écran : la boîte ne dépasse jamais, les boutons du bas restent visibles.</summary>
+        protected void MakeScrollable()
+        {
+            var outer = Panel.Parent as StackPanel;
+            if (outer == null) return;
+            int idx = outer.Children.IndexOf(Panel);
+            if (idx < 0) return;
+            outer.Children.RemoveAt(idx);
+            var sv = new ScrollViewer { Content = Panel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Focusable = false, Padding = new Thickness(0, 0, 8, 0), MaxHeight = Math.Max(320, SystemParameters.WorkArea.Height - 220) };
+            outer.Children.Insert(idx, sv);
+        }
+
         // ---- aides de mise en page ----
         protected TextBlock Label(string text)
         {

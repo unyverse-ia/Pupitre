@@ -493,6 +493,10 @@ namespace Pupitre
 
         public List<ServiceDef> Services { get { return store.Services; } }
         public bool FilterActive { get { return ServiceFilter.Count > 0 || Search.Length > 0; } }
+        /// <summary>Catégories masquées par le filtre ou la recherche (aucune tâche correspondante).</summary>
+        public int HiddenCategories { get; private set; }
+        /// <summary>Filtre et recherche viennent d'être effacés (pour montrer une catégorie neuve) : la fenêtre se met à jour.</summary>
+        public event Action FilterReset;
 
         /// <summary>Migration des fichiers antérieurs (projets → sous-tâches, services en texte) : catégorie « Général », thématiques, tâches, services nommés.</summary>
         bool Migrate()
@@ -614,6 +618,7 @@ namespace Pupitre
                 if (!FilterActive || themes.Count > 0) visible.Add(cat);
             }
             Sync(Cats, visible);
+            HiddenCategories = cats.Count - visible.Count;
             Recount();
         }
 
@@ -639,6 +644,8 @@ namespace Pupitre
             var vm = NewItem(0, null, name.Trim());
             vm.M.Color = TaskColors.Next(All.Count(t => t.Kind == 0) - 1);
             saveDeb.Trigger();
+            // une catégorie neuve est vide : avec un filtre ou une recherche actifs elle resterait invisible, on les efface
+            if (FilterActive) { ServiceFilter.Clear(); Search = ""; var h = FilterReset; if (h != null) h(); }
             Rebuild();
             return vm;
         }

@@ -141,7 +141,7 @@ namespace Pupitre
                             <Viewbox Width='13' Height='13'><Path Style='{DynamicResource Ico}' Data='{Binding ChevronData}'/></Viewbox>
                           </Button>
                         </StackPanel>
-                        <TextBox Uid='title' Style='{DynamicResource GhostTextBox}' FontWeight='SemiBold' FontSize='13' Text='{Binding Title, UpdateSourceTrigger=PropertyChanged}' Tag='Titre' Padding='0,2,0,2' VerticalAlignment='Center'/>
+                        <TextBox Uid='title' Style='{DynamicResource GhostTextBox}' FontWeight='SemiBold' FontSize='13' Text='{Binding Title, UpdateSourceTrigger=PropertyChanged}' Tag='Titre' Padding='0,2,0,2' TextWrapping='Wrap' VerticalAlignment='Center'/>
                       </DockPanel>
                       <Grid Margin='16,2,0,0' Visibility='{Binding IsExpanded, Converter={StaticResource B2V}}'>
                         <ScrollViewer MaxHeight='420' VerticalScrollBarVisibility='Auto' HorizontalScrollBarVisibility='Disabled' Focusable='False' Visibility='{Binding NotTextEditing, Converter={StaticResource B2V}}'>
