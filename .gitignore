@@ -1,9 +1,7 @@
-# Sorties de compilation et fichiers temporaires
-dist/Pupitre.exe
+# Sorties de compilation, fichiers temporaires, dossier de travail des assets (Codex)
 tools/MakeIcon.exe
 tools/dev/*.txt
-assets-codex/codex-log-*.txt
+tools/dev/real/
+assets-codex/
 *.corrompu-*
 *.tmp
-tools/dev/real/
-assets-codex/codex-log*.txt

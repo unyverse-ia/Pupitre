@@ -1,8 +1,0 @@
-Tu es le graphiste de Pupitre (organiseur de bureau Windows). Ta première proposition de logo (monogramme « Pu » façon Adobe) est refusée : c'est un plagiat des icônes Adobe. Nouvelle mission : quatre logos originaux qui représentent le concept de Pupitre, décrits dans assets-codex/BRIEF-LOGO-2.md (lis ce fichier en entier et respecte-le à la lettre : quatre concepts différents, aucune lettre ni texte, à plat sans 3D, palette imposée, carré arrondi).
-
-Méthode attendue :
-1. Pour chaque concept, génère l'image avec ta compétence ImageGen (image_gen), format carré, rendu vectoriel plat, net, sans ombre, dégradé, reflet, texture ni contour noir, sans aucun texte ni lettre. Si le résultat contient du texte, une lettre, un effet 3D ou un dégradé, régénère-le (deux essais maximum par concept).
-2. Normalise chaque image à exactement 1024 × 1024 px en PNG 32 bits avec le masque de carré arrondi (rayon 190 px) via ton script de assets-codex/tools/ ; vérifie les pixels (2,2) alpha 0 et (512,512) alpha 255.
-3. Enregistre logo-a.png, logo-b.png, logo-c.png, logo-d.png dans assets-codex/logo2/, puis écris assets-codex/logo2/LIVRAISON.md (concept retenu par fichier, outil, vérifications, écarts).
-
-Contraintes : ne modifie aucun autre fichier du projet (ni src/, ni dist/, ni assets/, ni README.md, ni assets-codex/logo/). Travaille sans poser de question.

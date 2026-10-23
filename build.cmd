@@ -12,7 +12,7 @@ if not exist assets mkdir assets
 echo [1/3] Icone...
 if exist assets\pupitre.ico if "%~1"=="" goto :skipicon
 "%CSC%" /nologo /target:exe /optimize+ /codepage:65001 /out:tools\MakeIcon.exe /r:System.Drawing.dll tools\MakeIcon.cs || goto :err
-tools\MakeIcon.exe assets-codex\icon.png assets\pupitre.ico || goto :err
+tools\MakeIcon.exe assets\pupitre-icone.png assets\pupitre.ico || goto :err
 :skipicon
 echo        assets\pupitre.ico (passer "icon" en argument pour la regenerer)
 

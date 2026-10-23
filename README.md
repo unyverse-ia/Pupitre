@@ -110,9 +110,7 @@ se masque depuis les paramètres ou la zone de notification.
 
 Aucun outil à installer : `build.cmd` utilise le compilateur C# fourni avec le .NET Framework 4.8
 (inclus dans Windows 10/11) et produit `dist\Pupitre.exe`. `build.cmd icon` régénère l'icône
-depuis `assets-codex\icon.png` (logo « cadres » livré par Codex : `assets-codex\logo2\logo-b.png`, appliqué ; autres concepts
-`logo-a` pupitre, `logo-c` surface ordonnée, `logo-d` symbole abstrait ; brief `assets-codex\BRIEF-LOGO-2.md` ;
-anciennes icônes `icon-user.png`, `icon-a` à `icon-d.png` ; copier l'une d'elles sur `icon.png` puis `build.cmd icon`).
+depuis `assets\pupitre-icone.png` (source PNG du logo).
 
 **Smart App Control** : si cette protection de Windows 11 est activée, elle peut refuser de lancer
 un exécutable fraîchement compilé (« Une stratégie de contrôle d'application a bloqué ce fichier »).
