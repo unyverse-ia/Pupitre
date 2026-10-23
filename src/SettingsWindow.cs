@@ -13,7 +13,7 @@ namespace Pupitre
     {
         readonly Controller c;
         readonly Settings d;
-        CheckBox cbStart, cbSnap, cbHide, cbExt, cbAuto, cbRemind, cbTasks, cbNotes, cbMind, cbLock;
+        CheckBox cbStart, cbSnap, cbHide, cbExt, cbAuto, cbRemind, cbTasks, cbNotes, cbMind, cbLock, cbDock;
         RadioButton[] iconSize = new RadioButton[3];
         StackPanel cadreList, windowList, profileList;
         TextBlock status;
@@ -33,6 +33,7 @@ namespace Pupitre
             cbExt = Opt(g1, "Afficher les extensions", d.ShowExtensions);
             cbAuto = Opt(g1, "Tri automatique (règles des cadres)", d.AutoSort);
             cbLock = Opt(g1, "Verrouiller tous les panneaux", d.LockLayout);
+            cbDock = Opt(g1, "Fusionner un cadre déposé contre un autre", !d.NoAutoDock);
             Panel.Children.Add(g1);
             Note("« Masquer les icônes du bureau » : le cadre « Bureau » les affiche à la place ; elles reviennent quand " + App.Name + " est fermé.");
             var row2 = new DockPanel { Margin = new Thickness(0, 8, 0, 0) };
@@ -208,7 +209,7 @@ namespace Pupitre
             to.StartWithWindows = from.StartWithWindows; to.LockLayout = from.LockLayout; to.Snap = from.Snap; to.HideDesktopIcons = from.HideDesktopIcons;
             to.ShowExtensions = from.ShowExtensions; to.IconSize = from.IconSize; to.QuickMods = from.QuickMods; to.QuickVk = from.QuickVk;
             to.ToggleMods = from.ToggleMods; to.ToggleVk = from.ToggleVk; to.DailyReminder = from.DailyReminder; to.AutoSort = from.AutoSort; to.TasksVisible = from.TasksVisible;
-            to.NotesVisible = from.NotesVisible; to.MindVisible = from.MindVisible; to.MindStyleOpen = from.MindStyleOpen; to.Welcomed = from.Welcomed; to.Services = from.Services;
+            to.NotesVisible = from.NotesVisible; to.MindVisible = from.MindVisible; to.MindStyleOpen = from.MindStyleOpen; to.Welcomed = from.Welcomed; to.Services = from.Services; to.NoAutoDock = from.NoAutoDock;
         }
 
         protected override bool Validate()
@@ -219,6 +220,7 @@ namespace Pupitre
             s.StartWithWindows = cbStart.IsChecked == true; s.Snap = cbSnap.IsChecked == true;
             s.HideDesktopIcons = cbHide.IsChecked == true; s.ShowExtensions = cbExt.IsChecked == true; s.AutoSort = cbAuto.IsChecked == true; s.LockLayout = cbLock.IsChecked == true;
             s.TasksVisible = cbTasks.IsChecked == true; s.NotesVisible = cbNotes.IsChecked == true; s.MindVisible = cbMind.IsChecked == true; s.DailyReminder = cbRemind.IsChecked == true;
+            s.NoAutoDock = cbDock.IsChecked != true;
             for (int i = 0; i < iconSize.Length; i++) if (iconSize[i].IsChecked == true) s.IconSize = i;
             if (!c.ApplySettings()) c.Toast("Un raccourci clavier est indisponible (déjà utilisé par une autre application) ; les autres réglages sont enregistrés.");
             return true;

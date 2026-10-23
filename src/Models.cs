@@ -24,6 +24,7 @@ namespace Pupitre
         [DataMember] public bool MindStyleOpen;
         [DataMember] public bool Welcomed;
         [DataMember] public string Services;      // services / pôles, séparés par des virgules
+        [DataMember] public bool NoAutoDock;      // cadres : pas de fusion automatique quand un cadre est déposé contre un autre
 
         public Settings() { Defaults(); }
         [OnDeserializing] void OnDeserializing(StreamingContext c) { Defaults(); }

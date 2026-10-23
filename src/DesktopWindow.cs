@@ -218,7 +218,24 @@ namespace Pupitre
             if (e.ClickCount == 2) { ToggleRoll(); e.Handled = true; return; }
             Activate();
             if (IsLocked) return;
+            OnTitleDragStart();
+            titleDragging = true;
             try { DragMove(); } catch { }
+            titleDragging = false;
+            OnTitleDragEnd();
+        }
+
+        bool titleDragging;
+        /// <summary>Vrai pendant un déplacement par la barre de titre (DragMove).</summary>
+        public bool IsTitleDragging { get { return titleDragging; } }
+        protected virtual void OnTitleDragStart() { }
+        protected virtual void OnTitleDragEnd() { }
+
+        /// <summary>Surligne le bord où un cadre glissé va s'accrocher : 1 = sous cette fenêtre, 2 = au-dessus, 0 = rien.</summary>
+        public void SetDockHint(int where)
+        {
+            Root.BorderBrush = where != 0 ? Theme.Res<Brush>("Accent") : Theme.Argb(0x2AFFFFFF);
+            Root.BorderThickness = where == 1 ? new Thickness(1, 1, 1, 4) : where == 2 ? new Thickness(1, 4, 1, 1) : new Thickness(1);
         }
 
         // ---- Renommage en place --------------------------------------------------------------------

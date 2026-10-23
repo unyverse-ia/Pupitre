@@ -42,11 +42,87 @@ namespace Pupitre
             return c.Cadres.Where(t => t != w && Above(c, t) == null).ToList();
         }
 
+        // ---- accrochage sur le bureau : glisser par le titre ------------------------------------------------------
+
+        const double DockTolerance = 28;      // distance (unités WPF) entre les bords pour s'accrocher
+        const double LeaveDistance = 12;      // déplacement minimal avant qu'un cadre collé quitte sa colonne
+        static CadreWindow dockTarget;         // fenêtre surlignée pendant le glisser
+        static int dockWhere;                  // 1 = sous elle, 2 = au-dessus d'elle
+        static double dragX, dragY;
+
+        public static void BeginTitleDrag(Controller c, CadreWindow w)
+        {
+            dragX = w.Left; dragY = w.Top;
+            dockTarget = null; dockWhere = 0;
+        }
+
+        /// <summary>Pendant le glisser : un cadre collé sous un autre quitte sa colonne dès qu'il s'éloigne ; la fenêtre contre laquelle
+        /// il s'accrocherait est surlignée.</summary>
+        static void TrackTitleDrag(Controller c, CadreWindow w)
+        {
+            if (IsBelow(c, w) && (Math.Abs(w.Left - dragX) > LeaveDistance || Math.Abs(w.Top - dragY) > LeaveDistance)) Detach(c, w);
+            int where = 0; CadreWindow t = null;
+            if (!c.S.NoAutoDock) t = DockCandidate(c, w, out where);
+            if (t == null) where = 0;
+            if (t != dockTarget || where != dockWhere)
+            {
+                if (dockTarget != null) dockTarget.SetDockHint(0);
+                dockTarget = t; dockWhere = where;
+                if (t != null) t.SetDockHint(where);
+            }
+        }
+
+        /// <summary>Au relâchement : le cadre (avec sa propre colonne) s'insère sous la fenêtre surlignée, ou au-dessus d'une tête.</summary>
+        public static void EndTitleDrag(Controller c, CadreWindow w)
+        {
+            var t = dockTarget; int where = dockWhere;
+            if (t != null) t.SetDockHint(0);
+            dockTarget = null; dockWhere = 0;
+            if (t == null || where == 0) return;
+            var mine = Chain(c, w);
+            if (mine.Contains(t)) return;
+            var col = Chain(c, t);
+            int index = where == 1 ? col.IndexOf(t) + 1 : col.IndexOf(t);
+            var target = col.Where(m => !mine.Contains(m)).ToList();
+            index = Math.Max(0, Math.Min(index, target.Count));
+            target.InsertRange(index, mine);
+            Relink(target);
+            Sync(c, t);                           // la colonne existante garde sa place, le cadre déposé vient s'y coller
+            SyncAll(c);
+            c.SaveLayoutSoon();
+        }
+
+        /// <summary>Fenêtre visible dont le bas touche presque le haut du cadre glissé (accrochage dessous), ou tête de colonne dont le haut
+        /// touche presque son bas (accrochage au-dessus) ; les deux doivent se chevaucher d'au moins la moitié de leur largeur.</summary>
+        static CadreWindow DockCandidate(Controller c, CadreWindow w, out int where)
+        {
+            where = 0;
+            var mine = Chain(c, w);
+            double myBottom = mine[mine.Count - 1].Top + HeightOf(mine[mine.Count - 1]);
+            CadreWindow best = null; double bestD = DockTolerance;
+            foreach (var t in c.Cadres)
+            {
+                if (!t.IsVisible || mine.Contains(t)) continue;
+                double overlap = Math.Min(w.Left + w.Width, t.Left + t.Width) - Math.Max(w.Left, t.Left);
+                if (overlap < Math.Min(w.Width, t.Width) * 0.5) continue;
+                double d1 = Math.Abs(w.Top - (t.Top + HeightOf(t)));
+                if (d1 < bestD) { bestD = d1; best = t; where = 1; }
+                if (Above(c, t) == null)
+                {
+                    double d2 = Math.Abs(myBottom - t.Top);
+                    if (d2 < bestD) { bestD = d2; best = t; where = 2; }
+                }
+            }
+            return best;
+        }
+
         /// <summary>Après un déplacement, un redimensionnement ou un repli d'un membre : tout le groupe suit.</summary>
         public static void Sync(Controller c, DesktopWindow source)
         {
             var src = source as CadreWindow;
-            if (src == null || syncing || !src.IsVisible || !IsGrouped(c, src)) return;
+            if (src == null || syncing) return;
+            if (src.IsTitleDragging && src.IsVisible) TrackTitleDrag(c, src);
+            if (!src.IsVisible || !IsGrouped(c, src)) return;
             syncing = true;
             try
             {

@@ -640,6 +640,8 @@ namespace Pupitre
 
         protected override void OnOpenSettings() { c.EditCadre(this); }
         protected override bool AllowTopResize { get { return !Fusion.IsBelow(c, this); } }
+        protected override void OnTitleDragStart() { Fusion.BeginTitleDrag(c, this); }
+        protected override void OnTitleDragEnd() { Fusion.EndTitleDrag(c, this); }
 
         /// <summary>Menu du titre : fusion avec la colonne d'un autre cadre (ou cadre indépendant).</summary>
         protected override void BuildMenu(ContextMenu menu)
