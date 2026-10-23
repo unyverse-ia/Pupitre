@@ -136,7 +136,40 @@ namespace Pupitre
 
         static bool PointsHere(string target) { return target != null && string.Equals(App.Norm(target), App.Norm(App.ExePath), StringComparison.OrdinalIgnoreCase); }
 
-        /// <summary>Inscrit (et réactive) ou retire l'entrée.</summary>
+        // ---- méthode « dossier Démarrage » : raccourci Pupitre.lnk dans le dossier Démarrage du profil (aucun droit requis) ----
+        static string ShortcutPath() { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup), App.Name + ".lnk"); }
+
+        public static bool ShortcutExists() { try { return File.Exists(ShortcutPath()); } catch { return false; } }
+
+        static bool CreateShortcut()
+        {
+            try
+            {
+                var shellType = Type.GetTypeFromProgID("WScript.Shell");
+                if (shellType == null) throw new Exception("WScript.Shell indisponible");
+                dynamic shell = Activator.CreateInstance(shellType);
+                dynamic lnk = shell.CreateShortcut(ShortcutPath());
+                lnk.TargetPath = App.ExePath;
+                lnk.Arguments = "--demarrage";
+                lnk.WorkingDirectory = Path.GetDirectoryName(App.ExePath);
+                lnk.Description = App.Name + " — lancement à l'ouverture de session";
+                lnk.Save();
+                return true;
+            }
+            catch (Exception ex) { Log.Error(ex, "démarrage"); return false; }
+        }
+
+        static void DeleteShortcut() { try { if (File.Exists(ShortcutPath())) File.Delete(ShortcutPath()); } catch (Exception ex) { Log.Error(ex, "démarrage"); } }
+
+        /// <summary>Applique la méthode choisie : 0 = clé Run, 1 = raccourci du dossier Démarrage ; l'autre méthode est retirée.</summary>
+        public static void Apply(bool enabled, int mode)
+        {
+            if (!enabled) { Set(false); DeleteShortcut(); return; }
+            if (mode == 1) { Set(false); CreateShortcut(); }
+            else { DeleteShortcut(); Set(true); }
+        }
+
+        /// <summary>Inscrit (et réactive) ou retire l'entrée de la clé Run.</summary>
         public static void Set(bool enabled)
         {
             try
@@ -156,18 +189,44 @@ namespace Pupitre
             catch (Exception ex) { Log.Error(ex, "démarrage"); }
         }
 
-        /// <summary>Au lancement : l'entrée existante suit l'exécutable s'il a été déplacé (sans toucher à l'état d'activation).</summary>
-        public static void RefreshPath()
+        /// <summary>Au lancement : l'entrée existante suit l'exécutable s'il a été déplacé (sans toucher à l'état d'activation) ;
+        /// en mode dossier Démarrage, le raccourci est recréé si l'exécutable a changé de place.</summary>
+        public static void RefreshPath(int mode, string lastPath)
         {
+            if (mode == 1)
+            {
+                if (ShortcutExists() && !string.Equals(App.Norm(lastPath ?? ""), App.Norm(App.ExePath), StringComparison.OrdinalIgnoreCase)) CreateShortcut();
+                return;
+            }
             var t = Target();
             if (t == null || PointsHere(t)) return;
             try { using (var k = Registry.CurrentUser.CreateSubKey(RunKey)) if (k != null) k.SetValue(App.Name, "\"" + App.ExePath + "\""); }
             catch (Exception ex) { Log.Error(ex, "démarrage"); }
         }
 
-        /// <summary>État lisible, affiché dans les paramètres.</summary>
-        public static string Describe()
+        /// <summary>Journal des lancements (%APPDATA%\Pupitre\demarrage.log, 40 dernières lignes) : dit si Windows a bien lancé Pupitre.</summary>
+        public static void LogLaunch(bool automatic)
         {
+            try
+            {
+                string path = Path.Combine(App.DataDir, "demarrage.log");
+                Directory.CreateDirectory(App.DataDir);
+                var lines = File.Exists(path) ? new List<string>(File.ReadAllLines(path)) : new List<string>();
+                lines.Add(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "  " + (automatic ? "lancement automatique (ouverture de session)" : "lancement manuel") + "  " + App.ExePath);
+                while (lines.Count > 40) lines.RemoveAt(0);
+                File.WriteAllLines(path, lines.ToArray());
+            }
+            catch { }
+        }
+
+        /// <summary>État lisible, affiché dans les paramètres.</summary>
+        public static string Describe(int mode)
+        {
+            if (mode == 1)
+            {
+                return ShortcutExists() ? "Démarrage avec Windows : raccourci « Pupitre » présent dans le dossier Démarrage du profil (" + ShortcutPath() + ")."
+                                        : "Démarrage avec Windows : raccourci du dossier Démarrage absent ; enregistrer avec l'option cochée le crée.";
+            }
             var t = Target();
             if (t == null) return "Démarrage avec Windows : inactif.";
             if (!IsApproved()) return "Démarrage avec Windows : inscrit, mais désactivé dans « Applications de démarrage » du Gestionnaire des tâches. Enregistrer avec l'option cochée le réactive.";

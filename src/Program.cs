@@ -37,6 +37,7 @@ namespace Pupitre
                 app.DispatcherUnhandledException += (s, e) => { Log.Fatal(e.Exception); e.Handled = true; };
                 AppDomain.CurrentDomain.UnhandledException += (s, e) => { Log.Fatal(e.ExceptionObject as Exception ?? new Exception("exception non gérée")); controller.OnCrash(); };
                 bool openSettings = Array.Exists(args, x => string.Equals(x, "--parametres", StringComparison.OrdinalIgnoreCase));
+                controller.AutoStarted = Array.Exists(args, x => string.Equals(x, "--demarrage", StringComparison.OrdinalIgnoreCase));
                 app.Startup += (s, e) => { controller.Start(); if (openSettings) controller.OpenSettings(); };
                 app.Exit += (s, e) => controller.Dispose();
                 return app.Run();

@@ -49,6 +49,7 @@ namespace Pupitre
         public IntPtr DesktopHost;
         public bool AllHidden;
         public bool Exiting;
+        public bool AutoStarted;      // lancé par Windows à l'ouverture de session (argument --demarrage)
         readonly Application app;
         TrayIcon tray;
         MessageWindow msgWin;
@@ -119,8 +120,10 @@ namespace Pupitre
             if (L.NotesPanel == null) L.NotesPanel = new PanelInfo { Color = 7 };
             if (L.MindPanel == null) L.MindPanel = new PanelInfo { Color = 5 };
             var store = Json.Load<TaskStore>(TasksPath);
-            S.StartWithWindows = Startup.IsEnabled();
-            Startup.RefreshPath();                       // l'entrée suit l'exécutable s'il a été déplacé
+            S.StartWithWindows = S.StartupMode == 1 ? Startup.ShortcutExists() : Startup.IsEnabled();
+            Startup.RefreshPath(S.StartupMode, S.StartupPath);   // l'entrée suit l'exécutable s'il a été déplacé
+            S.StartupPath = App.ExePath;
+            Startup.LogLaunch(AutoStarted);
             Tasks = new TasksVm(this, store);
             Tasks.CountsChanged += OnCounts;
             layoutDeb = new Debouncer(600, delegate { UpdateAutoProfile(); Json.Save(LayoutPath, L); });
@@ -654,7 +657,8 @@ namespace Pupitre
         public bool ApplySettings()
         {
             bool ok = RegisterHotkeys();
-            if (S.StartWithWindows) Startup.Set(true); else if (Startup.IsEnabled()) Startup.Set(false);   // Set(true) réactive aussi l'entrée
+            Startup.Apply(S.StartWithWindows, S.StartupMode);
+            S.StartupPath = App.ExePath;
             if (S.HideDesktopIcons) { DesktopIcons.SetHidden(true); weHidIcons = true; }
             else if (weHidIcons) { DesktopIcons.SetHidden(false); weHidIcons = false; }
             foreach (var w in DesktopWindows) { w.ApplyAppearance(); w.ApplyLock(); }

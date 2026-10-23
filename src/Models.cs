@@ -26,6 +26,8 @@ namespace Pupitre
         [DataMember] public bool Welcomed;
         [DataMember] public string Services;      // services / pôles, séparés par des virgules
         [DataMember] public bool NoAutoDock;      // cadres : pas de fusion automatique quand un cadre est déposé contre un autre
+        [DataMember] public int StartupMode;      // 0 clé Run du profil, 1 raccourci dans le dossier Démarrage du profil
+        [DataMember] public string StartupPath;   // exécutable inscrit au démarrage (pour suivre un déplacement)
 
         public Settings() { Defaults(); }
         [OnDeserializing] void OnDeserializing(StreamingContext c) { Defaults(); }

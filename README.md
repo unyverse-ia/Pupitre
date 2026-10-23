@@ -118,7 +118,7 @@ se masque depuis les paramètres ou la zone de notification.
 - **Ctrl + Alt + B** : afficher / masquer tous les panneaux.
 - Icône de la zone de notification : clic gauche = afficher / masquer, double-clic = nouvelle tâche, clic droit = menu (dont les paramètres).
 - Les combinaisons sont fixes ; pour en changer, modifier `QuickMods`/`QuickVk` et `ToggleMods`/`ToggleVk` dans `settings.json` (Pupitre fermé).
-- `Pupitre.exe --parametres` ouvre directement la fenêtre des paramètres (utile pour un raccourci) ; `Pupitre.exe --quitter` demande à l'instance en cours d'enregistrer et de se fermer (mise à jour).
+- `Pupitre.exe --parametres` ouvre directement la fenêtre des paramètres (utile pour un raccourci) ; `Pupitre.exe --quitter` demande à l'instance en cours d'enregistrer et de se fermer (mise à jour) ; `--demarrage` marque un lancement automatique dans `demarrage.log`.
 
 ## Compilation
 
@@ -172,7 +172,7 @@ ne touche ni tâches, ni notes, ni cartes, ni disposition. Les fichiers d'une ve
   disposition (cadres, notes, panneaux Tâches et Notes, écran et position par panneau),
   tâches, tâches archivées. Modifiables à la main
   (Pupitre fermé) ; un fichier illisible est mis de côté en `.corrompu-*` et remplacé par défaut.
-- `%APPDATA%\Pupitre\erreurs.log` — uniquement en cas d'erreur inattendue.
+- `%APPDATA%\Pupitre\erreurs.log` — uniquement en cas d'erreur inattendue ; `demarrage.log` — un enregistrement par lancement (manuel ou automatique).
 - `Bureau\<Nom du cadre>` (dossier caché) — pour chaque cadre créé « sur le bureau ». Supprimer un
   cadre ne supprime jamais son dossier ni les fichiers.
 - Clé `HKCU\...\Run\Pupitre` — seulement si « Lancer avec Windows » est coché.
@@ -213,11 +213,18 @@ l'état réel de cette entrée (active, désactivée, chemin périmé). Si Pupit
 2. Gestionnaire des tâches → **Applications de démarrage** : Pupitre doit être « Activé » (Windows peut l'avoir
    désactivé ; Pupitre le réactive à l'enregistrement des paramètres).
 3. Dossier déplacé ou renommé après l'activation : lancez Pupitre une fois à la main, il corrige le chemin lui-même.
-4. PC d'entreprise : une stratégie peut interdire les programmes au démarrage ou les exécutables non signés, et
+4. Dossier synchronisé (Documents géré par **OneDrive**, par exemple) : à l'ouverture de session, le fichier peut ne pas
+   être encore disponible. Placez le dossier hors de la zone synchronisée (`C:\Pupitre`, par exemple) ou marquez-le
+   « Toujours conserver sur cet appareil » (clic droit sur le dossier dans l'Explorateur).
+5. Le fichier `%APPDATA%\Pupitre\demarrage.log` (bouton « Dossier des données » des paramètres) garde la trace de chaque
+   lancement : s'il n'y a pas de ligne « lancement automatique » à l'heure de l'ouverture de session, Windows n'a pas
+   lancé Pupitre (stratégie, antivirus, fichier indisponible) ; s'il y en a une mais que rien ne s'affiche, signalez-le.
+6. PC d'entreprise : une stratégie peut interdire les programmes au démarrage ou les exécutables non signés, et
    **Smart App Control** peut bloquer un exécutable non signé sans message (journal
    *Microsoft-Windows-CodeIntegrity/Operational*, événement 3077). Solutions : signer l'exécutable (voir plus haut)
    ou demander à l'informatique ; à défaut, un raccourci vers `Pupitre.exe` dans le dossier Démarrage
-   (`Win+R`, `shell:startup`) est parfois accepté là où la clé Run ne l'est pas.
+   (`Win+R`, `shell:startup`) est parfois accepté là où la clé Run ne l'est pas : c'est la méthode **Raccourci dans le
+   dossier Démarrage**, à choisir sous l'option « Lancer avec Windows » puis Enregistrer.
 
 ## Limites connues
 

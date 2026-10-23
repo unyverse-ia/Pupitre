@@ -15,6 +15,7 @@ namespace Pupitre
         readonly Settings d;
         CheckBox cbStart, cbSnap, cbHide, cbExt, cbAuto, cbRemind, cbTasks, cbNotes, cbMind, cbLock, cbDock;
         RadioButton[] iconSize = new RadioButton[3];
+        RadioButton[] startMode = new RadioButton[2];
         StackPanel cadreList, windowList, profileList;
         TextBlock status, startupNote;
 
@@ -37,7 +38,14 @@ namespace Pupitre
             cbDock.ToolTip = "Un cadre déposé contre le bas (ou le haut) d'un autre s'y colle en colonne";
             Panel.Children.Add(g1);
             Note("« Masquer les icônes du bureau » : le cadre « Bureau » les affiche à la place ; elles reviennent quand " + App.Name + " est fermé.");
-            startupNote = Note(Startup.Describe());
+            startupNote = Note(Startup.Describe(d.StartupMode));
+            var sm = new WrapPanel { Margin = new Thickness(0, 6, 0, 0) };
+            startMode[0] = Chip("Clé de registre (standard)", "startmode", d.StartupMode != 1);
+            startMode[1] = Chip("Raccourci dans le dossier Démarrage", "startmode", d.StartupMode == 1);
+            startMode[1].ToolTip = "Raccourci Pupitre.lnk dans le dossier Démarrage de votre profil (Win+R, shell:startup) : autre voie, sans droit particulier, parfois acceptée là où la clé de registre ne l'est pas.";
+            sm.Children.Add(startMode[0]); sm.Children.Add(startMode[1]);
+            Panel.Children.Add(sm);
+            Note("Le journal " + App.DataDir + "\\demarrage.log (bouton « Dossier des données ») indique si Windows a bien lancé Pupitre à chaque ouverture de session.");
             var row2 = new DockPanel { Margin = new Thickness(0, 8, 0, 0) };
             row2.Children.Add(Lbl("Taille des icônes par défaut"));
             var wp2 = new WrapPanel();
@@ -211,7 +219,7 @@ namespace Pupitre
             to.StartWithWindows = from.StartWithWindows; to.LockLayout = from.LockLayout; to.Snap = from.Snap; to.HideDesktopIcons = from.HideDesktopIcons;
             to.ShowExtensions = from.ShowExtensions; to.IconSize = from.IconSize; to.QuickMods = from.QuickMods; to.QuickVk = from.QuickVk;
             to.ToggleMods = from.ToggleMods; to.ToggleVk = from.ToggleVk; to.DailyReminder = from.DailyReminder; to.AutoSort = from.AutoSort; to.TasksVisible = from.TasksVisible;
-            to.NotesVisible = from.NotesVisible; to.MindVisible = from.MindVisible; to.MindStyleOpen = from.MindStyleOpen; to.MindTab = from.MindTab; to.Welcomed = from.Welcomed; to.Services = from.Services; to.NoAutoDock = from.NoAutoDock;
+            to.NotesVisible = from.NotesVisible; to.MindVisible = from.MindVisible; to.MindStyleOpen = from.MindStyleOpen; to.MindTab = from.MindTab; to.Welcomed = from.Welcomed; to.Services = from.Services; to.NoAutoDock = from.NoAutoDock; to.StartupMode = from.StartupMode; to.StartupPath = from.StartupPath;
         }
 
         protected override bool Validate()
@@ -223,9 +231,10 @@ namespace Pupitre
             s.HideDesktopIcons = cbHide.IsChecked == true; s.ShowExtensions = cbExt.IsChecked == true; s.AutoSort = cbAuto.IsChecked == true; s.LockLayout = cbLock.IsChecked == true;
             s.TasksVisible = cbTasks.IsChecked == true; s.NotesVisible = cbNotes.IsChecked == true; s.MindVisible = cbMind.IsChecked == true; s.DailyReminder = cbRemind.IsChecked == true;
             s.NoAutoDock = cbDock.IsChecked != true;
+            s.StartupMode = startMode[1].IsChecked == true ? 1 : 0;
             for (int i = 0; i < iconSize.Length; i++) if (iconSize[i].IsChecked == true) s.IconSize = i;
             if (!c.ApplySettings()) c.Toast("Un raccourci clavier est indisponible (déjà utilisé par une autre application) ; les autres réglages sont enregistrés.");
-            startupNote.Text = Startup.Describe();
+            startupNote.Text = Startup.Describe(c.S.StartupMode);
             return true;
         }
 
