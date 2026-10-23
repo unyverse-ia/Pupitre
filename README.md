@@ -73,7 +73,7 @@ renommer, dupliquer, supprimer, et « Nouvelle feuille… ») part d'un sujet ce
 une nouvelle feuille se crée à partir d'un **modèle**, chacun illustré par une vignette (fond, couleurs et structure) : carte mentale, schéma logique (droite ou gauche), organigramme
 (bas ou haut), arborescence, chronologie (horizontale ou verticale), arête de poisson, remue-méninges, plan de projet,
 compte rendu de réunion, SWOT, semaine. La barre d'outils se limite à trois libellés, Feuille ▾, Insérer ▾ et Exporter ▾ ; la barre de titre ajoute ajuster,
-volet Style et plein écran ; tout le reste se fait par le **volet Style** à gauche (vignettes : structure, thème, palette des
+volet et plein écran ; tout le reste se fait par le **volet** de gauche, en deux onglets : **Cartes** (toutes les feuilles, affiché par défaut : filtre, ordre, renommer, dupliquer, supprimer, nouvelle feuille ; le libellé « Feuille ▾ » y conduit) et **Options** (vignettes : structure, thème, palette des
 branches, forme des sujets, lignes, espacement, numérotation, puis couleur, forme et texte du sujet sélectionné), par
 le clic droit, ou au clavier. Le volet s'affiche ou se masque avec l'icône liste de la barre de titre et se
 resserre dans un panneau étroit au lieu de disparaître ; l'icône flèche de la barre de titre passe le panneau en plein

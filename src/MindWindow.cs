@@ -67,12 +67,12 @@ namespace Pupitre
             map = store.Maps.FirstOrDefault(m => m.Id == store.CurrentId) ?? store.Maps[0];
             store.CurrentId = map.Id;
             StabilizeSides();
-            saveDeb = new Debouncer(700, delegate { map.Updated = Now(); Json.Save(c.MindPath, store); });
+            saveDeb = new Debouncer(700, delegate { map.Updated = Now(); Json.Save(c.MindPath, store); RefreshMapList(); });
 
             var fit = Theme.IconButton("IcoRefresh", "Ajuster la carte à la fenêtre  (Ctrl+0)", 15);
             fit.Click += delegate { Fit(); };
             AddAction(fit);
-            var sideBtn = Theme.IconButton("IcoList", "Afficher / masquer le volet Style (structure, thème, couleurs, formes)", 15);
+            var sideBtn = Theme.IconButton("IcoList", "Afficher / masquer le volet (liste des cartes, options de style)", 15);
             sideBtn.Click += delegate { ToggleStylePanel(); };
             AddAction(sideBtn);
             var full = Theme.IconButton("IcoExternal", "Plein écran : le panneau occupe tout l'écran ; même bouton pour revenir", 15);
@@ -201,6 +201,7 @@ namespace Pupitre
             Render();
             if (m.PanX == 0 && m.PanY == 0) Fit();
             saveDeb.Trigger();
+            RefreshMapList();
         }
 
         /// <summary>Nouvelle feuille : nom et modèle (structure, style, sujets de départ).</summary>

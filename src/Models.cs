@@ -22,6 +22,7 @@ namespace Pupitre
         [DataMember] public bool NotesVisible;
         [DataMember] public bool MindVisible;
         [DataMember] public bool MindStyleOpen;
+        [DataMember] public int MindTab;          // volet des cartes mentales : 0 liste des cartes, 1 options de style
         [DataMember] public bool Welcomed;
         [DataMember] public string Services;      // services / pôles, séparés par des virgules
         [DataMember] public bool NoAutoDock;      // cadres : pas de fusion automatique quand un cadre est déposé contre un autre

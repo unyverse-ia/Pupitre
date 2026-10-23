@@ -67,8 +67,16 @@ namespace Pupitre
             nodeSection = new StackPanel();
             styleStack.Children.Add(nodeSection);
 
-            var sv = new ScrollViewer { Content = styleStack, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Focusable = false };
-            stylePanel = new Border { Width = 232, Background = Theme.Brush(0x2E, Colors.Black), BorderBrush = Theme.Res<Brush>("Line"), BorderThickness = new Thickness(0, 0, 1, 0), Child = sv, Margin = new Thickness(0, 0, 6, 0), CornerRadius = new CornerRadius(0, 0, 0, 10) };
+            optionsView = new ScrollViewer { Content = styleStack, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Focusable = false };
+            mapsView = BuildMapList();
+            var tabs = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(8, 8, 6, 2) };
+            tabMaps = SideTab("Cartes", 0); tabOptions = SideTab("Options", 1);
+            tabs.Children.Add(tabMaps); tabs.Children.Add(tabOptions);
+            DockPanel.SetDock(tabs, Dock.Top);
+            var views = new Grid(); views.Children.Add(mapsView); views.Children.Add(optionsView);
+            var host = new DockPanel(); host.Children.Add(tabs); host.Children.Add(views);
+            stylePanel = new Border { Width = 300, Background = Theme.Brush(0x2E, Colors.Black), BorderBrush = Theme.Res<Brush>("Line"), BorderThickness = new Thickness(0, 0, 1, 0), Child = host, Margin = new Thickness(0, 0, 6, 0), CornerRadius = new CornerRadius(0, 0, 0, 10) };
+            SetSideTab(c.S.MindTab);
             return stylePanel;
         }
 
@@ -121,6 +129,28 @@ namespace Pupitre
             return -1;
         }
 
+        FrameworkElement mapsView, optionsView;
+        RadioButton tabMaps, tabOptions;
+
+        RadioButton SideTab(string text, int index)
+        {
+            var rb = new RadioButton { Style = Theme.Res<Style>("SChip"), Content = text, GroupName = "mindside", Margin = new Thickness(0, 0, 6, 0) };
+            rb.Checked += delegate { SetSideTab(index); };
+            return rb;
+        }
+
+        /// <summary>Onglet du volet : 0 = liste des cartes (par défaut), 1 = options de style ; le choix est mémorisé.</summary>
+        void SetSideTab(int index)
+        {
+            if (mapsView == null) return;
+            mapsView.Visibility = index == 0 ? Visibility.Visible : Visibility.Collapsed;
+            optionsView.Visibility = index == 1 ? Visibility.Visible : Visibility.Collapsed;
+            if (index == 0 && tabMaps.IsChecked != true) tabMaps.IsChecked = true;
+            if (index == 1 && tabOptions.IsChecked != true) tabOptions.IsChecked = true;
+            if (c.S.MindTab != index) { c.S.MindTab = index; c.SaveSettings(); }
+            if (index == 0) RefreshMapList();
+        }
+
         void ToggleStylePanel()
         {
             c.S.MindStyleOpen = !c.S.MindStyleOpen;
@@ -133,7 +163,7 @@ namespace Pupitre
         {
             if (stylePanel == null) return;
             stylePanel.Visibility = c.S.MindStyleOpen ? Visibility.Visible : Visibility.Collapsed;
-            stylePanel.Width = double.IsNaN(ActualWidth) || ActualWidth < 10 ? 232 : Math.Min(232, Math.Max(150, ActualWidth * 0.42));
+            stylePanel.Width = double.IsNaN(ActualWidth) || ActualWidth < 10 ? 232 : Math.Min(300, Math.Max(170, ActualWidth * 0.42));
         }
 
         /// <summary>Met à jour les vignettes (sélection, thème) et reconstruit la section du sujet sélectionné.</summary>

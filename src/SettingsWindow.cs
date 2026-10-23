@@ -209,7 +209,7 @@ namespace Pupitre
             to.StartWithWindows = from.StartWithWindows; to.LockLayout = from.LockLayout; to.Snap = from.Snap; to.HideDesktopIcons = from.HideDesktopIcons;
             to.ShowExtensions = from.ShowExtensions; to.IconSize = from.IconSize; to.QuickMods = from.QuickMods; to.QuickVk = from.QuickVk;
             to.ToggleMods = from.ToggleMods; to.ToggleVk = from.ToggleVk; to.DailyReminder = from.DailyReminder; to.AutoSort = from.AutoSort; to.TasksVisible = from.TasksVisible;
-            to.NotesVisible = from.NotesVisible; to.MindVisible = from.MindVisible; to.MindStyleOpen = from.MindStyleOpen; to.Welcomed = from.Welcomed; to.Services = from.Services; to.NoAutoDock = from.NoAutoDock;
+            to.NotesVisible = from.NotesVisible; to.MindVisible = from.MindVisible; to.MindStyleOpen = from.MindStyleOpen; to.MindTab = from.MindTab; to.Welcomed = from.Welcomed; to.Services = from.Services; to.NoAutoDock = from.NoAutoDock;
         }
 
         protected override bool Validate()

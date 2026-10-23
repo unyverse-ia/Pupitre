@@ -160,21 +160,28 @@ namespace Pupitre
             return b;
         }
 
-        void ShowMapList()
+        Action mapListRefresh;
+        TextBox mapListFilter;
+
+        /// <summary>Onglet « Cartes » du volet : toutes les feuilles (filtre, ordre, renommer, dupliquer, supprimer, nouvelle feuille),
+        /// la feuille courante en surbrillance ; rafraîchi à chaque enregistrement et à chaque changement de feuille.</summary>
+        FrameworkElement BuildMapList()
         {
-            var root = new StackPanel { Width = 330 };
+            var root = new DockPanel { Margin = new Thickness(8, 6, 6, 8) };
             var filter = new TextBox { Style = Theme.Res<Style>("FieldTextBox"), Tag = "Rechercher une feuille…", Margin = new Thickness(0, 0, 0, 6) };
+            DockPanel.SetDock(filter, Dock.Top);
             root.Children.Add(filter);
-            var list = new StackPanel();
-            var scroll = new ScrollViewer { Content = list, MaxHeight = 340, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Focusable = false };
-            root.Children.Add(scroll);
             var foot = new DockPanel { Margin = new Thickness(0, 8, 0, 0) };
             var add = new Button { Style = Theme.Res<Style>("ChipColored"), Background = Theme.Res<Brush>("Accent"), Foreground = Brushes.White, FontWeight = FontWeights.SemiBold, Content = "+ Nouvelle feuille…", ToolTip = "Créer une feuille à partir d'un modèle" };
-            add.Click += delegate { popup.IsOpen = false; NewMapInteractive(); };
+            add.Click += delegate { NewMapInteractive(); };
             DockPanel.SetDock(add, Dock.Right);
             var count = new TextBlock { Foreground = Theme.Res<Brush>("TextFaint"), FontSize = 11, VerticalAlignment = VerticalAlignment.Center };
             foot.Children.Add(add); foot.Children.Add(count);
+            DockPanel.SetDock(foot, Dock.Bottom);
             root.Children.Add(foot);
+            var list = new StackPanel();
+            var scroll = new ScrollViewer { Content = list, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Focusable = false };
+            root.Children.Add(scroll);
             Action fill = null;
             fill = delegate
             {
@@ -194,17 +201,15 @@ namespace Pupitre
                     acts.Children.Add(RowBtn(new TextBlock { Text = "▼", FontSize = 9, Foreground = Theme.Res<Brush>("TextMuted") }, "Descendre", idx < store.Maps.Count - 1, delegate { store.Maps.RemoveAt(idx); store.Maps.Insert(idx + 1, m); saveDeb.Trigger(); UpdateFooter(); fill(); }));
                     acts.Children.Add(RowBtn(Theme.Icon("IcoPencil", 12), "Renommer", true, delegate
                     {
-                        popup.IsOpen = false;
                         var n = Dialogs.Prompt(this, "Renommer la feuille", "Nom", m.Name, false);
                         if (!string.IsNullOrWhiteSpace(n)) { m.Name = n.Trim(); UpdateFooter(); saveDeb.Trigger(); }
                     }));
                     acts.Children.Add(RowBtn(Theme.Icon("IcoCopy", 12), "Dupliquer", true, delegate
                     {
-                        popup.IsOpen = false;
                         var d = MindJson.Clone(m); d.Id = NewId(); d.Name = m.Name + " (copie)"; d.Created = Now();
                         store.Maps.Insert(idx + 1, d); SelectMap(d);
                     }));
-                    acts.Children.Add(RowBtn(Theme.Icon("IcoTrash", 12), "Supprimer…", true, delegate { popup.IsOpen = false; DeleteMap(m); }));
+                    acts.Children.Add(RowBtn(Theme.Icon("IcoTrash", 12), "Supprimer…", true, delegate { DeleteMap(m); }));
                     DockPanel.SetDock(acts, Dock.Right);
                     var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
                     text.Children.Add(new TextBlock { Text = m.Name, FontWeight = cur ? FontWeights.SemiBold : FontWeights.Normal, Foreground = Theme.Res<Brush>("Text"), TextTrimming = TextTrimming.CharacterEllipsis });
@@ -217,7 +222,7 @@ namespace Pupitre
                     row.MouseLeftButtonDown += delegate(object s2, MouseButtonEventArgs e)
                     {
                         if (Ui.FindAncestor<ButtonBase>(e.OriginalSource as DependencyObject) != null) return;
-                        popup.IsOpen = false; SelectMap(m); e.Handled = true;
+                        SelectMap(m); e.Handled = true;
                     };
                     list.Children.Add(row);
                 }
@@ -230,14 +235,25 @@ namespace Pupitre
                 {
                     string q = filter.Text.Trim().ToLowerInvariant();
                     var first = store.Maps.FirstOrDefault(x => (x.Name ?? "").ToLowerInvariant().IndexOf(q) >= 0);
-                    if (first != null) { popup.IsOpen = false; SelectMap(first); }
+                    if (first != null) SelectMap(first);
                     e.Handled = true;
                 }
-                else if (e.Key == Key.Escape) { popup.IsOpen = false; e.Handled = true; }
+                else if (e.Key == Key.Escape) { filter.Text = ""; e.Handled = true; }
             };
+            mapListRefresh = fill;
+            mapListFilter = filter;
             fill();
-            OpenPopup(mapBtn, root);
-            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, new Action(delegate { filter.Focus(); Keyboard.Focus(filter); }));
+            return root;
+        }
+
+        void RefreshMapList() { if (mapListRefresh != null) mapListRefresh(); }
+
+        /// <summary>Libellé « Feuille ▾ » : ouvre le volet sur l'onglet Cartes, curseur dans le filtre.</summary>
+        void ShowMapList()
+        {
+            if (!c.S.MindStyleOpen) { c.S.MindStyleOpen = true; c.SaveSettings(); UpdateStyleVisibility(); }
+            SetSideTab(0);
+            if (mapListFilter != null) Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, new Action(delegate { mapListFilter.Focus(); Keyboard.Focus(mapListFilter); }));
         }
     }
 }
